@@ -16,7 +16,7 @@ It was the Indian Space Agency’s Chandrayaan-2 mission that another time picke
 ## backlog/nice to have
 - connect to NASA Horizons-data :-)
 
-## screenshots
+## animations
 [![Orbital Earth around Sun](https://img.youtube.com/vi/Tnh3-dnT3iw/0.jpg)](https://www.youtube.com/watch?v=Tnh3-dnT3iw)
 
 [![Orbital Rocket around Earth](https://img.youtube.com/vi/6ElpsQva-jI/0.jpg)](https://www.youtube.com/watch?v=6ElpsQva-jI)
