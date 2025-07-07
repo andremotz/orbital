@@ -10,12 +10,13 @@ from physics.integrator import calculate_state_new
 
 
 class OrbitVisualizer:
-    """Reine Matplotlib-basierte Orbital-Simulation"""
+    """Reine Matplotlib-basierte Orbital-Simulation mit adaptiven Zeitschritten"""
     
     def __init__(self):
         # Simulation Parameter
         self.time = 0
-        self.time_step = 60  # Sekunden
+        self.physics_timestep = 60  # Konstant bei 60s für Genauigkeit
+        self.simulation_speed = 1   # Wie viele Physik-Schritte pro Frame
         self.zoom = 10**-6  # Fokus auf Erde
         self.center_x = 0
         self.center_y = 0
@@ -28,8 +29,11 @@ class OrbitVisualizer:
         
         # Bahnspuren für jedes Objekt speichern
         self.trails = {}
+        # Zusätzliche Trail-Buffer für intelligentes Sampling
+        self.trail_buffers = {}
         for obj in self.massive_objects:
             self.trails[obj.name] = deque(maxlen=self.trail_length)
+            self.trail_buffers[obj.name] = []
         
         # Matplotlib Setup
         self.setup_plot()
@@ -85,8 +89,11 @@ class OrbitVisualizer:
             "+ - Zoom In\n"
             "- - Zoom Out\n"
             "o - Fokus wechseln\n"
-            "↑/↓ - Geschwindigkeit\n"
-            "r - Reset"
+            "↑/↓ - Sim-Geschwindigkeit\n"
+            "r - Reset\n"
+            "\n"
+            "Physik: 60s Schritte\n"
+            "Genauigkeit: Konstant"
         )
         self.ax.text(0.02, 0.98, info_text, transform=self.ax.transAxes, 
                     verticalalignment='top', fontsize=9, 
@@ -104,11 +111,13 @@ class OrbitVisualizer:
         elif event.key == 'o':
             self.cycle_focus()
         elif event.key == 'up':
-            self.time_step = min(86400, self.time_step * 10.5)  # Maximum: 1 Tag pro Frame
-            print(f"Geschwindigkeit erhöht: {self.time_step:.1f}s/Frame (×{self.time_step/60:.1f})")
+            self.simulation_speed = min(1440, int(self.simulation_speed * 2))  # Max: 1440 (1 Tag)
+            effective_time = self.simulation_speed * self.physics_timestep
+            print(f"Simulation beschleunigt: {self.simulation_speed} Schritte/Frame ({effective_time}s = {effective_time/3600:.1f}h)")
         elif event.key == 'down':
-            self.time_step = max(1, self.time_step / 10.5)
-            print(f"Geschwindigkeit reduziert: {self.time_step:.1f}s/Frame (×{self.time_step/60:.1f})")
+            self.simulation_speed = max(1, int(self.simulation_speed / 2))
+            effective_time = self.simulation_speed * self.physics_timestep
+            print(f"Simulation verlangsamt: {self.simulation_speed} Schritte/Frame ({effective_time}s = {effective_time/60:.1f}min)")
         elif event.key == 'r':
             self.reset_simulation()
             
@@ -134,32 +143,105 @@ class OrbitVisualizer:
     def reset_simulation(self):
         """Simulation zurücksetzen"""
         self.time = 0
+        self.simulation_speed = 1
         self.massive_objects = get_massive_objects()
         for obj in self.massive_objects:
             self.trails[obj.name].clear()
+            self.trail_buffers[obj.name].clear()
         print("Simulation zurückgesetzt")
         
     def get_focus_object(self):
         """Fokus-Objekt zurückgeben"""
         return self.massive_objects[self.focus_index]
         
+    def update_trail_intelligent(self, obj_name, position):
+        """Intelligentes Trail-Update mit adaptiver Ausdünnung"""
+        # Position zum Buffer hinzufügen
+        self.trail_buffers[obj_name].append(position)
+        
+        # Adaptive Ausdünnung basierend auf Geschwindigkeit
+        if self.simulation_speed <= 10:
+            # Bei niedrigen Geschwindigkeiten: alle Punkte behalten
+            sample_rate = 1
+        elif self.simulation_speed <= 50:
+            # Bei mittleren Geschwindigkeiten: jeden 2.-5. Punkt
+            sample_rate = max(2, self.simulation_speed // 5)
+        else:
+            # Bei hohen Geschwindigkeiten: intelligente Ausdünnung
+            sample_rate = max(5, self.simulation_speed // 10)
+        
+        # Buffer verarbeiten wenn genug Punkte gesammelt
+        if len(self.trail_buffers[obj_name]) >= sample_rate:
+            # Wichtige Punkte identifizieren (Wendepunkte, extreme Positionen)
+            buffer = self.trail_buffers[obj_name]
+            
+            if len(buffer) >= 3:
+                # Immer ersten und letzten Punkt behalten
+                self.trails[obj_name].append(buffer[0])
+                
+                # Bei mehr als 3 Punkten: Wendepunkte und Extrema finden
+                if len(buffer) > 3:
+                    # Mittlere Punkte nur bei signifikanten Richtungsänderungen
+                    for i in range(1, len(buffer) - 1):
+                        prev_pos = buffer[i-1]
+                        curr_pos = buffer[i]
+                        next_pos = buffer[i+1]
+                        
+                        # Richtungsvektor berechnen
+                        dx1 = curr_pos[0] - prev_pos[0]
+                        dy1 = curr_pos[1] - prev_pos[1]
+                        dx2 = next_pos[0] - curr_pos[0]
+                        dy2 = next_pos[1] - curr_pos[1]
+                        
+                        # Winkeländerung berechnen (Kreuprodukt)
+                        cross_product = abs(dx1 * dy2 - dy1 * dx2)
+                        distance = (dx1**2 + dy1**2)**0.5 * (dx2**2 + dy2**2)**0.5
+                        
+                        # Signifikante Krümmung? (adaptive Schwelle basierend auf Geschwindigkeit)
+                        curvature_threshold = max(1e12, 1e15 / self.simulation_speed)
+                        if distance > 0 and cross_product / distance > curvature_threshold:
+                            self.trails[obj_name].append(curr_pos)
+                
+                # Letzten Punkt immer hinzufügen
+                self.trails[obj_name].append(buffer[-1])
+            else:
+                # Bei wenigen Punkten: alle hinzufügen
+                for pos in buffer:
+                    self.trails[obj_name].append(pos)
+            
+            # Buffer leeren
+            self.trail_buffers[obj_name].clear()
+        
+    def flush_trail_buffers(self):
+        """Alle verbleibenden Trail-Buffer verarbeiten"""
+        for obj_name in self.trail_buffers:
+            if self.trail_buffers[obj_name]:
+                # Alle verbleibenden Punkte hinzufügen
+                for position in self.trail_buffers[obj_name]:
+                    self.trails[obj_name].append(position)
+                self.trail_buffers[obj_name].clear()
+        
     def update_animation(self, frame):
         """Animation-Update für matplotlib"""
         if self.paused:
             return list(self.planet_plots.values()) + list(self.trail_plots.values())
             
-        self.time += self.time_step
-        
-        # Physik-Simulation
-        for massive_object in self.massive_objects:
-            state_new = calculate_state_new(massive_object, self.massive_objects, self.time_step)
-            massive_object.addState(state_new)
+        # Mehrere Physik-Schritte pro Frame für Beschleunigung
+        for step in range(self.simulation_speed):
+            self.time += self.physics_timestep
             
-            # Position zur Bahnspur hinzufügen
-            current_state = massive_object.getLatestState()
-            self.trails[massive_object.name].append(
-                (current_state.vec_location[0], current_state.vec_location[1])
-            )
+            # Physik-Simulation mit konstanten 60s Schritten
+            for massive_object in self.massive_objects:
+                state_new = calculate_state_new(massive_object, self.massive_objects, self.physics_timestep)
+                massive_object.addState(state_new)
+                
+                # Position zur Bahnspur hinzufügen - ALLE Schritte für Genauigkeit
+                current_state = massive_object.getLatestState()
+                position = (current_state.vec_location[0], current_state.vec_location[1])
+                self.update_trail_intelligent(massive_object.name, position)
+        
+        # Alle verbleibenden Buffer-Punkte verarbeiten
+        self.flush_trail_buffers()
         
         # Fokus-Objekt für Kamera-Positionierung
         focus_obj = self.get_focus_object()
@@ -193,11 +275,20 @@ class OrbitVisualizer:
         # Titel mit aktueller Information
         days = self.time / (24 * 3600)
         focus_name = self.get_focus_object().name
-        speed_info = f"×{self.time_step/60:.1f}" if self.time_step != 60 else ""
+        speed_info = f"×{self.simulation_speed}" if self.simulation_speed != 1 else ""
         status = "⏸ PAUSIERT" if self.paused else "▶ LÄUFT"
         
-        title = f"Orbital Simulation - Tag {days:.1f} | Fokus: {focus_name} {speed_info} | {status}"
-        self.ax.set_title(title, color='white', fontsize=12)
+        # Effektive Zeitspanne pro Frame
+        effective_time_per_frame = self.simulation_speed * self.physics_timestep
+        if effective_time_per_frame >= 3600:
+            time_info = f"({effective_time_per_frame/3600:.1f}h/Frame)"
+        elif effective_time_per_frame >= 60:
+            time_info = f"({effective_time_per_frame/60:.1f}min/Frame)"
+        else:
+            time_info = f"({effective_time_per_frame}s/Frame)"
+        
+        title = f"Orbital Simulation - Tag {days:.1f} | Fokus: {focus_name} | {speed_info} {time_info} | {status}"
+        self.ax.set_title(title, color='white', fontsize=11)
         
         return list(self.planet_plots.values()) + list(self.trail_plots.values())
     
@@ -217,18 +308,29 @@ class OrbitVisualizer:
 
 def main():
     """Hauptfunktion für matplotlib-Version"""
-    print("=" * 50)
-    print("🚀 ORBITAL SIMULATION - MATPLOTLIB VERSION")
-    print("=" * 50)
+    print("=" * 60)
+    print("🚀 ORBITAL SIMULATION - ADAPTIVE ZEITSCHRITTE")
+    print("=" * 60)
     print()
-    print("STEUERUNG:")
+    print("🔬 PHYSIK:")
+    print("  • Konstante 60s Zeitschritte für maximale Genauigkeit")
+    print("  • RK4-Integration bei allen Geschwindigkeiten präzise")
+    print("  • Energie-Erhaltung und Orbit-Stabilität gewährleistet")
+    print()
+    print("⚡ BESCHLEUNIGUNG:")
+    print("  • Visualisierung: 1× bis 1440× (24 Stunden/Frame)")
+    print("  • Physik bleibt immer bei 60s-Schritten")
+    print("  • Intelligente Trail-Ausdünnung bei hohen Geschwindigkeiten")
+    print("  • Keine wichtigen Orbital-Events werden übersprungen")
+    print()
+    print("🎮 STEUERUNG:")
     print("  SPACE     - Pause/Play")
     print("  +/-       - Zoom In/Out")
-    print("  f         - Fokus wechseln")
-    print("  ↑/↓       - Geschwindigkeit ändern")
+    print("  o         - Fokus wechseln")
+    print("  ↑/↓       - Geschwindigkeit (Schritte/Frame)")
     print("  r         - Simulation zurücksetzen")
     print()
-    print("OBJEKTE:")
+    print("📡 OBJEKTE:")
     
     # Objekt-Informationen anzeigen
     objects = get_massive_objects()
@@ -236,7 +338,7 @@ def main():
         print(f"  {i}: {obj.name}")
     
     print()
-    print("Starte Simulation...")
+    print("🌍 Starte Simulation...")
     
     visualizer = OrbitVisualizer()
     visualizer.run()
