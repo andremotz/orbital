@@ -17,12 +17,12 @@ class OrbitVisualizer:
         self.time = 0
         self.physics_timestep = 60  # Konstant bei 60s für Genauigkeit
         self.simulation_speed = 1   # Wie viele Physik-Schritte pro Frame
-        self.zoom = 10**-6  # Fokus auf Erde
+        self.zoom = 10**-6 * (1.5**25)  # Vorgezoomt: entspricht 25x "+" drücken (~2.37)
         self.center_x = 0
         self.center_y = 0
         self.trail_length = 1000  # Länge der Bahnspuren
         self.paused = False
-        self.focus_index = 1  # 0=Sun, 1=Earth, 2=Moon, 3=Chandrayaan-2
+        self.focus_index = 0  # 0=Sun, 1=Earth, 2=Moon, 3=Chandrayaan-2
         
         # Himmelskörper initialisieren
         self.massive_objects = get_massive_objects()
@@ -41,7 +41,7 @@ class OrbitVisualizer:
     def setup_plot(self):
         """Matplotlib Plot einrichten"""
         plt.style.use('dark_background')
-        self.fig, self.ax = plt.subplots(figsize=(12, 10))
+        self.fig, self.ax = plt.subplots(figsize=(14, 10))
         self.fig.patch.set_facecolor('black')
         self.ax.set_facecolor('black')
         
@@ -82,22 +82,20 @@ class OrbitVisualizer:
         # Keyboard-Event-Handler
         self.fig.canvas.mpl_connect('key_press_event', self.on_key_press)
         
-        # Informationstext
+        # Kompakter Informationstext (ASCII-kompatibel)
         info_text = (
             "Steuerung:\n"
-            "SPACE - Pause/Play\n"
-            "+ - Zoom In\n"
-            "- - Zoom Out\n"
-            "o - Fokus wechseln\n"
-            "↑/↓ - Sim-Geschwindigkeit\n"
-            "r - Reset\n"
+            "SPACE: Pause/Play\n"
+            "+/-: Zoom  z: Zoom Reset\n"
+            "o: Fokus  Pfeile: Speed\n"
+            "r: Simulation Reset\n"
             "\n"
-            "Physik: 60s Schritte\n"
-            "Genauigkeit: Konstant"
+            "RK4 60s Integration\n"
+            "Intelligente Trails"
         )
         self.ax.text(0.02, 0.98, info_text, transform=self.ax.transAxes, 
-                    verticalalignment='top', fontsize=9, 
-                    bbox=dict(boxstyle='round', facecolor='black', alpha=0.8),
+                    verticalalignment='top', fontsize=8, 
+                    bbox=dict(boxstyle='round,pad=0.4', facecolor='black', alpha=0.9),
                     color='white')
         
     def on_key_press(self, event):
@@ -120,6 +118,8 @@ class OrbitVisualizer:
             print(f"Simulation verlangsamt: {self.simulation_speed} Schritte/Frame ({effective_time}s = {effective_time/60:.1f}min)")
         elif event.key == 'r':
             self.reset_simulation()
+        elif event.key == 'z':
+            self.reset_zoom()
             
     def zoom_in(self):
         """Hineinzoomen"""
@@ -134,6 +134,11 @@ class OrbitVisualizer:
         self.paused = not self.paused
         print(f"Simulation {'pausiert' if self.paused else 'gestartet'}")
         
+    def reset_zoom(self):
+        """Zoom auf Standard-Level zurücksetzen"""
+        self.zoom = 10**-6 * (1.5**25)
+        print("Zoom zurückgesetzt")
+        
     def cycle_focus(self):
         """Zwischen Fokus-Objekten wechseln"""
         self.focus_index = (self.focus_index + 1) % len(self.massive_objects)
@@ -144,6 +149,7 @@ class OrbitVisualizer:
         """Simulation zurücksetzen"""
         self.time = 0
         self.simulation_speed = 1
+        self.zoom = 10**-6 * (1.5**25)  # Standard-Zoom
         self.massive_objects = get_massive_objects()
         for obj in self.massive_objects:
             self.trails[obj.name].clear()
@@ -272,23 +278,29 @@ class OrbitVisualizer:
         self.ax.set_xlim(-view_range, view_range)
         self.ax.set_ylim(-view_range, view_range)
         
-        # Titel mit aktueller Information
+        # Kompakter Titel mit aktueller Information
         days = self.time / (24 * 3600)
         focus_name = self.get_focus_object().name
-        speed_info = f"×{self.simulation_speed}" if self.simulation_speed != 1 else ""
-        status = "⏸ PAUSIERT" if self.paused else "▶ LÄUFT"
         
-        # Effektive Zeitspanne pro Frame
-        effective_time_per_frame = self.simulation_speed * self.physics_timestep
-        if effective_time_per_frame >= 3600:
-            time_info = f"({effective_time_per_frame/3600:.1f}h/Frame)"
-        elif effective_time_per_frame >= 60:
-            time_info = f"({effective_time_per_frame/60:.1f}min/Frame)"
+        # ASCII Status-Indikator
+        status = "PAUSE" if self.paused else "PLAY"
+        
+        # Kompakte Geschwindigkeits-Info
+        if self.simulation_speed >= 1440:
+            speed_info = f"{self.simulation_speed//1440}d"  # Tage
+        elif self.simulation_speed >= 60:
+            speed_info = f"{self.simulation_speed//60}h"    # Stunden
+        elif self.simulation_speed > 1:
+            speed_info = f"{self.simulation_speed}×"
         else:
-            time_info = f"({effective_time_per_frame}s/Frame)"
+            speed_info = ""
         
-        title = f"Orbital Simulation - Tag {days:.1f} | Fokus: {focus_name} | {speed_info} {time_info} | {status}"
-        self.ax.set_title(title, color='white', fontsize=11)
+        # Kurzer Titel
+        if speed_info:
+            title = f"Tag {days:.1f} | {focus_name} | {speed_info} | {status}"
+        else:
+            title = f"Tag {days:.1f} | {focus_name} | {status}"
+        self.ax.set_title(title, color='white', fontsize=11, pad=10)
         
         return list(self.planet_plots.values()) + list(self.trail_plots.values())
     
@@ -297,12 +309,14 @@ class OrbitVisualizer:
         print("Starte Orbital-Simulation...")
         print("Verwende Tastatur für Steuerung (Fenster muss fokussiert sein)")
         
+        # Layout optimieren für bessere Titel-Anzeige
+        plt.subplots_adjust(top=0.92, bottom=0.08, left=0.08, right=0.95)
+        
         # Animation starten
         self.animation = animation.FuncAnimation(
             self.fig, self.update_animation, interval=50, blit=False
         )
         
-        plt.tight_layout()
         plt.show()
 
 
