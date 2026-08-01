@@ -102,3 +102,10 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+# Kompilierter Rust-Kernel (wird von build_rust_kernel.sh erzeugt)
+orbital_rust_kernel.so
+orbital_rust_kernel.dylib
+
+# Weitere lokale virtuelle Umgebungen
+venv_python312/

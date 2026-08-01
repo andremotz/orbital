@@ -6,7 +6,7 @@ from collections import deque
 # Import modular components
 from data.constants import WIDTH, HEIGHT
 from data.celestial_objects import get_massive_objects
-from physics.integrator import calculate_state_new
+from physics.integrator import step
 
 
 class OrbitVisualizer:
@@ -257,15 +257,13 @@ class OrbitVisualizer:
             return list(self.planet_plots.values()) + list(self.trail_plots.values())
             
         # Multiple physics steps per frame for acceleration
-        for step in range(self.simulation_speed):
-            self.time += self.physics_timestep
-            
+        for _ in range(self.simulation_speed):
             # Physics simulation with constant 60s steps
+            step(self.massive_objects, self.physics_timestep, self.time)
+            self.time += self.physics_timestep
+
+            # Add position to orbital trail - ALL steps for accuracy
             for massive_object in self.massive_objects:
-                state_new = calculate_state_new(massive_object, self.massive_objects, self.physics_timestep)
-                massive_object.addState(state_new)
-                
-                # Add position to orbital trail - ALL steps for accuracy
                 current_state = massive_object.getLatestState()
                 position = (current_state.vec_location[0], current_state.vec_location[1])
                 self.update_trail_intelligent(massive_object.name, position)
