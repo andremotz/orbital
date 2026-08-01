@@ -1,0 +1,8 @@
+# Python-Extensions dürfen auf macOS nicht gegen libpython linken; die Symbole
+# löst erst der Interpreter beim Laden auf. Ohne diese Flags bricht der Linker
+# mit "symbol(s) not found" ab.
+[target.aarch64-apple-darwin]
+rustflags = ["-C", "link-arg=-undefined", "-C", "link-arg=dynamic_lookup"]
+
+[target.x86_64-apple-darwin]
+rustflags = ["-C", "link-arg=-undefined", "-C", "link-arg=dynamic_lookup"]
