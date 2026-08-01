@@ -1,0 +1,100 @@
+{
+  "name": "Chandrayaan-2",
+  "description": "Indische Mondmission, gestartet am 22. Juli 2019 mit einer LVM3-M1 vom Satish Dhawan Space Centre. Der Orbiter arbeitet bis heute; der Lander Vikram schlug am 6. September 2019 beim Abstiegsversuch auf der Mondoberflaeche auf.",
+  "epoch": "2019-07-22T09:13:12Z",
+  "time_step": 60,
+  "source": "https://en.wikipedia.org/wiki/Chandrayaan-2",
+
+  "limitations": [
+    "Die Simulation rechnet in 2D. Die Mondbahn ist rund 5,1 Grad gegen die Ekliptik geneigt, und der reale Transfer hatte Komponenten ausserhalb der Bahnebene -- die Mission ist in dieser Naeherung nicht reproduzierbar.",
+    "Die sechs erdnahen Bahnanhebungen und der trans-lunare Einschuss sind hier nicht als reale Brennprofile hinterlegt, sondern als Platzhalter.",
+    "Startzustaende sind osculating Werte aus veroeffentlichten Bahnangaben, keine Ephemeriden. Fuer belastbare Rechnungen waeren NASA-Horizons-Daten noetig."
+  ],
+
+  "bodies": [
+    {
+      "name": "Sun",
+      "mass": 1.989e30,
+      "radius": 6.96342e8,
+      "color": [255, 255, 0],
+      "is_heavy": true,
+      "location": [0, 0],
+      "velocity": [0, 0],
+      "source": "https://de.wikipedia.org/wiki/Sonnenmasse"
+    },
+    {
+      "name": "Earth",
+      "mass": 5.9722e24,
+      "radius": 6371000,
+      "color": [0, 255, 255],
+      "is_heavy": true,
+      "location": [0, 1.5e11],
+      "velocity": [29780, 0],
+      "source": "https://de.wikipedia.org/wiki/Erdmasse",
+      "note": "Kreisfoermige Naeherung der Erdbahn bei 1 AE."
+    },
+    {
+      "name": "Moon",
+      "relative_to": "Earth",
+      "mass": 7.349e22,
+      "radius": 1737000,
+      "color": [255, 255, 255],
+      "is_heavy": true,
+      "location": [0, 3.56671e8],
+      "velocity": [1020, 0],
+      "source": "https://de.wikipedia.org/wiki/Mond",
+      "note": "Abstand im Perigaeum; die reale Bahn ist exzentrisch (363.300 bis 405.500 km)."
+    },
+    {
+      "name": "Chandrayaan-2",
+      "relative_to": "Earth",
+      "mass": 3850,
+      "radius": 10,
+      "color": [255, 128, 0],
+      "is_heavy": false,
+      "location": [0, 6541000],
+      "velocity": [10403.1, 0],
+      "source": "https://en.wikipedia.org/wiki/Chandrayaan-2",
+      "note": "Startmasse des Verbunds: Orbiter 2379 kg, Lander Vikram 1471 kg. Startzustand im Perigaeum der ersten Parkbahn 170 x 45.475 km, abgeleitet aus dem Vis-Viva-Satz: r_p = 6541 km, v_p = 10403,1 m/s. Der Radius von 10 m ist ein Darstellungswert, kein physikalischer."
+    }
+  ],
+
+  "maneuvers": [
+    {
+      "body": "Chandrayaan-2",
+      "relative_to": "Earth",
+      "time_start": 172800,
+      "duration": 600,
+      "force": 4000,
+      "status": "placeholder",
+      "note": "Steht stellvertretend fuer die erste erdnahe Bahnanhebung am 24. Juli 2019. Schub und Dauer sind nicht die realen Werte. 'relative_to' ist entscheidend: ohne Erdbezug waere 'prograd' auf die Bahngeschwindigkeit der Erde um die Sonne bezogen und der Burn wuerde bremsen statt anheben."
+    }
+  ],
+
+  "milestones": [
+    {
+      "name": "Mondorbit-Einschuss",
+      "date": "2019-08-20",
+      "time": 2486928,
+      "body": "Chandrayaan-2",
+      "relative_to": "Moon",
+      "expected_distance": 1.14e6,
+      "tolerance": 1.0e5,
+      "status": "aspirational",
+      "note": "Historisch erreicht: Einschuss in eine Mondumlaufbahn von 114 x 18.072 km am 20. August 2019.",
+      "source": "https://en.wikipedia.org/wiki/Chandrayaan-2"
+    },
+    {
+      "name": "Vikram-Absturz",
+      "date": "2019-09-06",
+      "time": 4014108,
+      "body": "Chandrayaan-2",
+      "relative_to": "Moon",
+      "expected_distance": 1737000,
+      "tolerance": 5.0e4,
+      "status": "aspirational",
+      "note": "Historisches Ende des Landeversuchs: Vikram verlor waehrend des angetriebenen Abstiegs die Kontrolle und schlug auf. Der erwartete Abstand entspricht dem Mondradius, also der Oberflaeche.",
+      "source": "https://en.wikipedia.org/wiki/Chandrayaan-2"
+    }
+  ]
+}
