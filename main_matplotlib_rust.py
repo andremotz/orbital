@@ -2,18 +2,21 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import numpy as np
 from collections import deque
+import time
 
 # Import modular components
 from data.constants import WIDTH, HEIGHT
 from data.celestial_objects import get_massive_objects
-from physics.integrator import step
+
+# Import Rust integration
+from rust_integration import RustAcceleratedIntegrator, PerformanceBenchmark
 from rendering.utils import out_of_plane_distance, project_to_ecliptic
 
 
-class OrbitVisualizer:
-    """Pure matplotlib-based orbital simulation with adaptive time steps"""
+class RustOrbitVisualizer:
+    """Rust-beschleunigte matplotlib-basierte Orbital-Simulation mit adaptiven Zeitschritten"""
     
-    def __init__(self):
+    def __init__(self, use_rust=True):
         # Simulation parameters
         self.time = 0
         self.physics_timestep = 60  # Constant at 60s for accuracy
@@ -24,6 +27,17 @@ class OrbitVisualizer:
         self.trail_length = 1000  # Length of orbital trails
         self.paused = False
         self.focus_index = 0  # 0=Sun, 1=Earth, 2=Moon, 3=Chandrayaan-2
+        
+        # Rust integration
+        self.integrator = RustAcceleratedIntegrator(use_rust=use_rust)
+        self.use_rust = use_rust
+        
+        # Performance monitoring
+        self.frame_count = 0
+        self.last_fps_time = time.time()
+        self.fps = 0
+        self.physics_time = 0
+        self.total_physics_time = 0
         
         # Initialize celestial bodies
         self.massive_objects = get_massive_objects()
@@ -82,15 +96,18 @@ class OrbitVisualizer:
         # Keyboard event handler
         self.fig.canvas.mpl_connect('key_press_event', self.on_key_press)
         
-        # Compact information text (ASCII-compatible)
+        # Enhanced information text with Rust status
+        integrator_type = "Rust" if self.use_rust else "Python"
         info_text = (
             "Controls:\n"
             "SPACE: Pause/Play\n"
             "+/-: Zoom  z: Zoom Reset\n"
             "o: Focus  Arrows: Speed\n"
             "r: Reset Simulation\n"
+            "t: Toggle Rust/Python\n"
+            "b: Benchmark\n"
             "\n"
-            "RK4 60s Integration\n"
+            f"RK4 60s Integration ({integrator_type})\n"
             "Intelligent Trails"
         )
         self.ax.text(0.02, 0.98, info_text, transform=self.ax.transAxes, 
@@ -124,7 +141,7 @@ class OrbitVisualizer:
         self.ax.set_ylabel(f'Distance ({unit})', color='white')
         
     def on_key_press(self, event):
-        """Keyboard event handler"""
+        """Enhanced keyboard event handler with Rust controls"""
         if event.key == ' ':  # Space bar
             self.toggle_pause()
         elif event.key == '+' or event.key == '=':
@@ -145,7 +162,54 @@ class OrbitVisualizer:
             self.reset_simulation()
         elif event.key == 'z':
             self.reset_zoom()
+        elif event.key == 't':  # Toggle Rust/Python
+            self.toggle_integrator()
+        elif event.key == 'b':  # Benchmark
+            self.run_benchmark()
             
+    def toggle_integrator(self):
+        """Toggle between Rust and Python integrator"""
+        self.use_rust = not self.use_rust
+        self.integrator.use_rust = self.use_rust
+        integrator_type = "Rust" if self.use_rust else "Python"
+        print(f"🔄 Integrator umgeschaltet: {integrator_type}")
+        
+        # Update info text
+        self.update_info_text()
+        
+    def run_benchmark(self):
+        """Run performance benchmark"""
+        print("\n🔬 Führe Performance-Benchmark durch...")
+        benchmark = PerformanceBenchmark()
+        results = benchmark.benchmark_simulation(self.massive_objects, time_steps=1000)
+        
+        if 'speedup' in results:
+            print(f"⚡ Rust ist {results['speedup']:.2f}x schneller als Python")
+        else:
+            print("⚠️  Benchmark konnte nicht vollständig ausgeführt werden")
+            
+    def update_info_text(self):
+        """Update the information text with current integrator status"""
+        integrator_type = "Rust" if self.use_rust else "Python"
+        info_text = (
+            "Controls:\n"
+            "SPACE: Pause/Play\n"
+            "+/-: Zoom  z: Zoom Reset\n"
+            "o: Focus  Arrows: Speed\n"
+            "r: Reset Simulation\n"
+            "t: Toggle Rust/Python\n"
+            "b: Benchmark\n"
+            "\n"
+            f"RK4 60s Integration ({integrator_type})\n"
+            "Intelligent Trails"
+        )
+        
+        # Find and update the text object
+        for text_obj in self.ax.texts:
+            if "Controls:" in text_obj.get_text():
+                text_obj.set_text(info_text)
+                break
+                
     def zoom_in(self):
         """Zoom in"""
         self.zoom *= 1.5
@@ -253,21 +317,30 @@ class OrbitVisualizer:
                 self.trail_buffers[obj_name].clear()
         
     def update_animation(self, frame):
-        """Animation update for matplotlib"""
+        """Enhanced animation update with Rust integration and performance monitoring"""
         if self.paused:
             return list(self.planet_plots.values()) + list(self.trail_plots.values())
             
+        # Performance monitoring
+        physics_start = time.time()
+        
         # Multiple physics steps per frame for acceleration
         for _ in range(self.simulation_speed):
-            # Physics simulation with constant 60s steps
-            step(self.massive_objects, self.physics_timestep, self.time)
+            # Use Rust-accelerated physics simulation
+            self.integrator.calculate_states_batch(
+                self.massive_objects, self.physics_timestep, self.time
+            )
             self.time += self.physics_timestep
-
+            
             # Add position to orbital trail - ALL steps for accuracy
             for massive_object in self.massive_objects:
                 current_state = massive_object.getLatestState()
                 position = project_to_ecliptic(current_state.vec_location)
                 self.update_trail_intelligent(massive_object.name, position)
+        
+        # Record physics time
+        self.physics_time = time.time() - physics_start
+        self.total_physics_time += self.physics_time
         
         # Process all remaining buffer points
         self.flush_trail_buffers()
@@ -359,7 +432,7 @@ class OrbitVisualizer:
             self.ax.set_yticks(tick_pos_meters)
             self.ax.set_yticklabels(formatted_labels)
         
-        # Compact title with current information
+        # Enhanced title with performance information
         days = self.time / (24 * 3600)
         focus_name = self.get_focus_object().name
         
@@ -376,24 +449,25 @@ class OrbitVisualizer:
         else:
             speed_info = ""
         
-        # Out-of-plane offset of the focused body. The view projects onto the
-        # ecliptic, so without this the inclination would be invisible.
-        focus_z = out_of_plane_distance(self.get_focus_object())
-        z_info = f"z {focus_z/1e9:+.3f}M km" if abs(focus_z) >= 1e6 else "z ~0"
-
-        # Short title
+        # Performance info
+        integrator_type = "Rust" if self.use_rust else "Python"
+        physics_fps = self.simulation_speed / self.physics_time if self.physics_time > 0 else 0
+        
+        # Short title with performance data
         if speed_info:
-            title = f"Day {days:.1f} | {focus_name} | {z_info} | {speed_info} | {status}"
+            title = f"Day {days:.1f} | {focus_name} | {speed_info} | {integrator_type} | {physics_fps:.0f} phys/s | {status}"
         else:
-            title = f"Day {days:.1f} | {focus_name} | {z_info} | {status}"
+            title = f"Day {days:.1f} | {focus_name} | {integrator_type} | {physics_fps:.0f} phys/s | {status}"
         self.ax.set_title(title, color='white', fontsize=11, pad=10)
         
         return list(self.planet_plots.values()) + list(self.trail_plots.values())
     
     def run(self):
         """Start simulation"""
-        print("Starting orbital simulation...")
+        integrator_type = "Rust" if self.use_rust else "Python"
+        print(f"Starting Rust-beschleunigte orbital simulation ({integrator_type})...")
         print("Use keyboard for controls (window must be focused)")
+        print("New controls: 't' = Toggle Rust/Python, 'b' = Benchmark")
         
         # Optimize layout for better title display
         plt.subplots_adjust(top=0.92, bottom=0.08, left=0.08, right=0.95)
@@ -407,21 +481,21 @@ class OrbitVisualizer:
 
 
 def main():
-    """Main function for matplotlib version"""
+    """Main function for Rust-accelerated matplotlib version"""
     print("=" * 60)
-    print("🚀 ORBITAL SIMULATION - ADAPTIVE TIME STEPS")
+    print("🚀 RUST-BESCHLEUNIGTE ORBITAL SIMULATION")
     print("=" * 60)
     print()
     print("🔬 PHYSICS:")
     print("  • Constant 60s time steps for maximum accuracy")
-    print("  • RK4 integration precise at all speeds")
+    print("  • Rust-accelerated RK4 integration")
     print("  • Energy conservation and orbit stability guaranteed")
     print()
     print("⚡ ACCELERATION:")
     print("  • Visualization: 1× to 1440× (24 hours/frame)")
     print("  • Physics always stays at 60s steps")
     print("  • Intelligent trail thinning at high speeds")
-    print("  • No important orbital events are skipped")
+    print("  • Real-time performance monitoring")
     print()
     print("🎮 CONTROLS:")
     print("  SPACE     - Pause/Play")
@@ -429,6 +503,8 @@ def main():
     print("  o         - Switch Focus")
     print("  ↑/↓       - Speed (steps/frame)")
     print("  r         - Reset Simulation")
+    print("  t         - Toggle Rust/Python")
+    print("  b         - Performance Benchmark")
     print()
     print("📡 OBJECTS:")
     
@@ -440,9 +516,10 @@ def main():
     print()
     print("🌍 Starting simulation...")
     
-    visualizer = OrbitVisualizer()
+    # Create visualizer with Rust acceleration
+    visualizer = RustOrbitVisualizer(use_rust=True)
     visualizer.run()
 
 
 if __name__ == "__main__":
-    main() 
+    main()

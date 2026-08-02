@@ -4,7 +4,7 @@ from collections import defaultdict
 # Import der modularen Komponenten
 from data.constants import WIDTH, HEIGHT
 from data.celestial_objects import get_massive_objects
-from physics.integrator import calculate_state_new
+from physics.integrator import step
 from rendering.renderer import pygame_draw
 
 
@@ -28,12 +28,9 @@ def main():
     time_step = 60
 
     while running:
+        # Alle Objekte gemeinsam einen Zeitschritt weiter
+        step(list_massiveobjects, time_step, time)
         time += time_step
-
-        # Berechne neue Zustände für alle Objekte
-        for massiveObject_1 in list_massiveobjects:
-            state_new = calculate_state_new(massiveObject_1, list_massiveobjects, time_step)
-            massiveObject_1.addState(state_new)
 
         # Event handling
         for event in pygame.event.get():

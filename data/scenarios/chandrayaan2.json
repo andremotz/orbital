@@ -1,0 +1,276 @@
+{
+  "name": "Chandrayaan-2",
+  "description": "Indische Mondmission, gestartet am 22. Juli 2019 mit einer LVM3-M1 vom Satish Dhawan Space Centre. Der Orbiter arbeitet bis heute; der Lander Vikram schlug am 6. September 2019 beim Abstiegsversuch auf der Mondoberflaeche auf.",
+  "epoch": "2019-07-22T10:00:00 TDB",
+  "time_step": 60,
+  "source": "Startzustaende und Brennprofil aus JPL Horizons; siehe data/horizons_cache/",
+  "provenance": {
+    "initial_state": "JPL Horizons, Chandrayaan-2 Orbiter (-152), Bahnloesung an DSN-Trackingdaten angepasst",
+    "frame": "Ekliptik J2000; Sun/Earth/Moon bezogen auf den Schwerpunkt des Sonnensystems, Chandrayaan-2 geozentrisch",
+    "maneuvers": "Aus der real geflogenen Bahn abgeleitet: zwischen Manoevern ist die Bewegung ballistisch, also wurde mit dem eigenen Kernel von Stuetzstelle zu Stuetzstelle weitergerechnet und die unerklaerte Geschwindigkeitsaenderung als Delta-v gebucht. Siehe detect_maneuvers.py. Die so gefundenen Zeitpunkte decken sich auf wenige Minuten mit dem veroeffentlichten ISRO-Zeitplan."
+  },
+  "limitations": [
+    "Modelliert werden nur Sonne, Erde und Mond samt Erdabplattung J2. Nicht enthalten sind die uebrigen Planeten, Strahlungsdruck, Restatmosphaere und hoehere Terme des Erdschwerefelds. Im Perigaeum bleibt dadurch eine Restabweichung von einigen m/s je Durchgang.",
+    "Die Manoever sind als gleichmaessiger Schub ueber die erkannte Dauer angenaehert. Das reale Brennprofil war nicht konstant, und die Aufloesung der Erkennung betraegt 10 Minuten.",
+    "Ohne Zielsteuerung summieren sich die Abweichungen ueber die Mission auf. Die Bahn folgt der realen ueber Tage, nicht ueber Wochen."
+  ],
+  "bodies": [
+    {
+      "name": "Sun",
+      "mu": 1.3271244004127942e+20,
+      "mass": 1.988409871316534e+30,
+      "radius": 696342000.0,
+      "color": [
+        255,
+        255,
+        0
+      ],
+      "is_heavy": true,
+      "location": [
+        -362844417.5391249,
+        1139230990.721639,
+        -2100584.738758509
+      ],
+      "velocity": [
+        -14.59321867294633,
+        -0.31672060955035847,
+        0.3817228227812172
+      ],
+      "source": "JPL Horizons DE441, GM aus DE440"
+    },
+    {
+      "name": "Earth",
+      "mu": 398600435507000.0,
+      "mass": 5.972168399787245e+24,
+      "radius": 6371000.0,
+      "color": [
+        0,
+        255,
+        255
+      ],
+      "is_heavy": true,
+      "location": [
+        73481088125.84113,
+        -131716062079.17819,
+        4223381.248310208
+      ],
+      "velocity": [
+        25536.95874520495,
+        14347.8485441883,
+        -0.02652809112557719
+      ],
+      "source": "JPL Horizons DE441, GM aus DE440",
+      "oblateness": {
+        "j2": 0.00108262668,
+        "equatorial_radius": 6378137.0,
+        "pole": [
+          0.0,
+          -0.3977772,
+          0.9174821
+        ],
+        "note": "Aequatorwulst der Erde. Im erdnahen Orbit die staerkste Stoerung ueberhaupt, rund 400-mal staerker als die dortige Mondanziehung. Die Polrichtung ist um die Ekliptikschiefe von 23,4393 Grad gegen die z-Achse gekippt."
+      }
+    },
+    {
+      "name": "Moon",
+      "mu": 4902800019630.0,
+      "mass": 7.345789100924442e+22,
+      "radius": 1737400.0,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "is_heavy": true,
+      "location": [
+        73883953044.25572,
+        -131718146279.85721,
+        -31207644.5775032
+      ],
+      "velocity": [
+        25522.04314162162,
+        15315.97513772862,
+        -25.29698057216567
+      ],
+      "source": "JPL Horizons DE441, GM aus DE440"
+    },
+    {
+      "name": "Chandrayaan-2",
+      "relative_to": "Earth",
+      "mass": 3850,
+      "radius": 10,
+      "color": [
+        255,
+        128,
+        0
+      ],
+      "is_heavy": false,
+      "location": [
+        4905149.772913668,
+        -11950220.920247281,
+        57952.58671671218
+      ],
+      "velocity": [
+        6546.018016357412,
+        -2178.109723240063,
+        -633.5082545648327
+      ],
+      "source": "JPL Horizons, Orbiter -152",
+      "note": "Startmasse des Verbunds laut Horizons: Orbiter 2379 kg, Lander Vikram 1471 kg, Rover Pragyan 27 kg. Geozentrisch angegeben, weil Horizons die Bahnloesung in diesem Bezug fuehrt; ueber die SSB-Kette entstuende ein konstanter Versatz von 116 km."
+    }
+  ],
+  "maneuvers": [
+    {
+      "body": "Chandrayaan-2",
+      "time_start": 293400.0,
+      "duration": 1800.0,
+      "delta_v": 97.107,
+      "direction": [
+        0.54893,
+        -0.8331,
+        0.067973
+      ],
+      "detected_at": "2019-Jul-25 19:30",
+      "note": "EBN#2 Bahnanhebung",
+      "relative_to": "Earth"
+    },
+    {
+      "body": "Chandrayaan-2",
+      "time_start": 603600.0,
+      "duration": 1800.0,
+      "delta_v": 109.623,
+      "direction": [
+        0.368106,
+        -0.926084,
+        0.08286
+      ],
+      "detected_at": "2019-Jul-29 09:40",
+      "note": "EBN#3 Bahnanhebung",
+      "relative_to": "Earth"
+    },
+    {
+      "body": "Chandrayaan-2",
+      "time_start": 949800.0,
+      "duration": 1800.0,
+      "delta_v": 74.225,
+      "direction": [
+        0.361657,
+        -0.926832,
+        0.100933
+      ],
+      "detected_at": "2019-Aug-02 09:50",
+      "note": "EBN#4 Bahnanhebung",
+      "relative_to": "Earth"
+    },
+    {
+      "body": "Chandrayaan-2",
+      "time_start": 1294200.0,
+      "duration": 1800.0,
+      "delta_v": 125.565,
+      "direction": [
+        0.39079,
+        -0.92048,
+        0.00059
+      ],
+      "detected_at": "2019-Aug-06 09:30",
+      "note": "EBN#5 Bahnanhebung",
+      "relative_to": "Earth"
+    },
+    {
+      "body": "Chandrayaan-2",
+      "time_start": 1939800.0,
+      "duration": 1800.0,
+      "delta_v": 148.678,
+      "direction": [
+        0.105332,
+        -0.99253,
+        0.061559
+      ],
+      "detected_at": "2019-Aug-13 20:50",
+      "note": "Trans-lunarer Einschuss (TLI)",
+      "relative_to": "Earth"
+    },
+    {
+      "body": "Chandrayaan-2",
+      "time_start": 2482200.0,
+      "duration": 2400.0,
+      "delta_v": 233.624,
+      "direction": [
+        -0.081115,
+        0.569706,
+        -0.817836
+      ],
+      "detected_at": "2019-Aug-20 03:30",
+      "note": "Mondorbit-Einschuss (LOI)",
+      "relative_to": "Earth"
+    },
+    {
+      "body": "Chandrayaan-2",
+      "time_start": 2582400.0,
+      "duration": 1800.0,
+      "delta_v": 177.652,
+      "direction": [
+        -0.067759,
+        0.599157,
+        -0.797759
+      ],
+      "detected_at": "2019-Aug-21 07:20",
+      "note": "Absenkung der Mondumlaufbahn",
+      "relative_to": "Earth"
+    },
+    {
+      "body": "Chandrayaan-2",
+      "time_start": 3173400.0,
+      "duration": 1800.0,
+      "delta_v": 181.463,
+      "direction": [
+        -0.062291,
+        0.607163,
+        -0.792132
+      ],
+      "detected_at": "2019-Aug-28 03:30",
+      "note": "Absenkung der Mondumlaufbahn",
+      "relative_to": "Earth"
+    },
+    {
+      "body": "Chandrayaan-2",
+      "time_start": 3379200.0,
+      "duration": 1800.0,
+      "delta_v": 185.044,
+      "direction": [
+        -0.063623,
+        0.617387,
+        -0.784082
+      ],
+      "detected_at": "2019-Aug-30 12:40",
+      "note": "Absenkung der Mondumlaufbahn",
+      "relative_to": "Earth"
+    }
+  ],
+  "milestones": [
+    {
+      "name": "Mondorbit-Einschuss",
+      "date": "2019-08-20",
+      "time": 2484000,
+      "body": "Chandrayaan-2",
+      "relative_to": "Moon",
+      "expected_distance": 1140000.0,
+      "tolerance": 500000.0,
+      "status": "aspirational",
+      "note": "Historisch erreicht: Einschuss in eine Mondumlaufbahn von 114 x 18.072 km am 20. August 2019.",
+      "source": "https://en.wikipedia.org/wiki/Chandrayaan-2"
+    },
+    {
+      "name": "Vikram-Absturz",
+      "date": "2019-09-06",
+      "time": 4011300,
+      "body": "Chandrayaan-2",
+      "relative_to": "Moon",
+      "expected_distance": 1737000,
+      "tolerance": 100000.0,
+      "status": "aspirational",
+      "note": "Historisches Ende des Landeversuchs: Vikram verlor waehrend des angetriebenen Abstiegs die Kontrolle und schlug auf. Der erwartete Abstand entspricht dem Mondradius, also der Oberflaeche.",
+      "source": "https://en.wikipedia.org/wiki/Chandrayaan-2"
+    }
+  ]
+}
