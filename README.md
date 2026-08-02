@@ -7,6 +7,7 @@ It was the Indian Space Agency’s Chandrayaan-2 mission that another time picke
 - Implement simple Newton-laws
 - N-Bodies: Rocket should rotate around Moon, Moon should rotate around Earth, Earth should rotate around Sun
 - Correct Runge-Kutta 4th order, integrating all bodies simultaneously (verified 4th order convergence)
+- 3D state vectors, so inclined orbits are representable — the Moon's orbit carries its real 5.145° tilt against the ecliptic
 - Rust kernel via PyO3 for the RK4 step, kept bit-identical to the Python path by parity tests (measured ~7.4x speedup on 4 bodies)
 - Mission- & object-data moved from source-code to external JSON config (`data/scenarios/`)
 - Two-layer verification: analytic kernel checks + mission scenarios with historical milestones
@@ -16,8 +17,9 @@ It was the Indian Space Agency’s Chandrayaan-2 mission that another time picke
 - Visualise several interesting cases, eg. Chandrayaan-2, Apollo 13, Voyager 1/2, …
 
 ## backlog/nice to have
-- connect to NASA Horizons-data :-)
-- 3D — the current 2D model cannot reproduce real lunar transfers (the Moon's orbit is inclined ~5.1°)
+- connect to NASA Horizons-data :-) — now that states are 3D, real ephemerides can be used directly
+- real burn profile for Chandrayaan-2: the six Earth-bound orbit raisings and the trans-lunar injection are still placeholders, so the probe never leaves Earth orbit
+- a 3D view — the simulation is 3D, but every view still projects onto the ecliptic
 - collision response — impacts are currently detected and reported, but not physically resolved
 
 ## running it

@@ -48,12 +48,18 @@ def solve_kepler_equation(mean_anomaly, eccentricity, tolerance=1e-14):
 
 
 def kepler_position(semi_major_axis, eccentricity, mu, elapsed):
-    """Exakte Position auf einer Keplerbahn, Start im Perihel bei t=0."""
+    """Exakte Position auf einer Keplerbahn, Start im Perihel bei t=0.
+
+    Die Bahn liegt in der x-y-Ebene, daher ist die dritte Komponente null --
+    was zugleich prüft, dass die Integration keine Bewegung aus der Ebene
+    heraus erfindet.
+    """
     mean_motion = math.sqrt(mu / semi_major_axis ** 3)
     eccentric_anomaly = solve_kepler_equation(mean_motion * elapsed, eccentricity)
     return np.array([
         semi_major_axis * (math.cos(eccentric_anomaly) - eccentricity),
         semi_major_axis * math.sqrt(1.0 - eccentricity ** 2) * math.sin(eccentric_anomaly),
+        0.0,
     ])
 
 

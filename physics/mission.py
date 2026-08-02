@@ -1,5 +1,7 @@
 import numpy as np
 
+from data.constants import DIMENSIONS
+
 
 def get_mission_acceleration(massive_object, time, all_bodies=None):
     """Beschleunigung durch aktive Manöver in m/s^2.
@@ -12,7 +14,7 @@ def get_mission_acceleration(massive_object, time, all_bodies=None):
     anderen Körper bezieht; ohne die Liste bleibt nur das absolute
     Bezugssystem.
     """
-    vec_acceleration = np.zeros(2)
+    vec_acceleration = np.zeros(DIMENSIONS)
     state = massive_object.getLatestState()
 
     for maneuver in massive_object.list_maneuvers:

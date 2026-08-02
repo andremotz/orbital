@@ -18,7 +18,7 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from data.constants import CONST_GRAVITY
+from data.constants import CONST_GRAVITY, DIMENSIONS
 from models.maneuver import Maneuver
 from models.massive_object import MassiveObject
 from models.state import State
@@ -30,9 +30,16 @@ MASS_SUN = 1.989e30
 AU = 1.5e11
 
 
+def as_vector(values):
+    """Ergänzt zwei- auf dreikomponentige Vektoren, wie der Szenario-Loader."""
+    components = [float(value) for value in values]
+    components += [0.0] * (DIMENSIONS - len(components))
+    return np.array(components)
+
+
 def make_object(name, mass, location, velocity, is_heavy=True):
     """Erzeugt einen Körper mit einem einzigen Anfangszustand."""
-    state = State(np.array(velocity, dtype=float), np.array(location, dtype=float))
+    state = State(as_vector(velocity), as_vector(location))
     return MassiveObject(state, mass, 1.0, (255, 255, 255), name, is_heavy, [])
 
 
@@ -48,18 +55,21 @@ def total_momentum(objects):
     """Gesamtimpuls Sigma m*v -- ohne äußere Kräfte eine Erhaltungsgröße."""
     return sum(
         (obj.mass * obj.getLatestState().vec_velocity for obj in objects),
-        np.zeros(2),
+        np.zeros(DIMENSIONS),
     )
 
 
 def total_angular_momentum(objects):
-    """Drehimpuls Sigma m*(x*vy - y*vx) um den Ursprung."""
-    total = 0.0
+    """Drehimpuls Sigma m*(r x v) um den Ursprung.
+
+    In 3D ist das ein Vektor: sein Betrag misst den Bahndrehimpuls, seine
+    Richtung steht senkrecht auf der Bahnebene. Beides muss erhalten bleiben,
+    denn eine driftende Richtung hiesse, dass sich die Bahnebene dreht.
+    """
+    total = np.zeros(DIMENSIONS)
     for obj in objects:
         state = obj.getLatestState()
-        x, y = state.vec_location
-        vx, vy = state.vec_velocity
-        total += obj.mass * (x * vy - y * vx)
+        total += obj.mass * np.cross(state.vec_location, state.vec_velocity)
     return total
 
 
@@ -140,7 +150,8 @@ class TestConservation(unittest.TestCase):
 
         advance(objects, self.TIME_STEP, self.STEPS)
 
-        drift = abs(total_angular_momentum(objects) - before) / abs(before)
+        drift = float(np.linalg.norm(total_angular_momentum(objects) - before))
+        drift /= float(np.linalg.norm(before))
         self.assertLess(drift, 1e-8, "Drehimpuls driftet")
 
     def test_energy_is_conserved(self):
@@ -188,6 +199,76 @@ class TestOrbitGeometry(unittest.TestCase):
         )
 
 
+class TestThreeDimensionalMotion(unittest.TestCase):
+    """Bewegung ausserhalb der Ekliptik.
+
+    Ohne diese Tests bliebe unbemerkt, wenn die dritte Komponente überall
+    null wäre -- die übrigen Tests liefen dann weiter, obwohl das Modell in
+    Wahrheit zweidimensional rechnete.
+    """
+
+    def inclined_orbit(self, inclination_degrees=30.0, radius=AU):
+        """Kreisbahn, deren Ebene um `inclination_degrees` gekippt ist."""
+        angle = math.radians(inclination_degrees)
+        speed = math.sqrt(CONST_GRAVITY * MASS_SUN / radius)
+
+        sun = make_object("Sun", MASS_SUN, [0.0, 0.0, 0.0], [0.0, 0.0, 0.0])
+        # Ortsvektor entlang x, Geschwindigkeit in der gekippten Ebene
+        satellite = make_object(
+            "Satellite", 1000.0,
+            [radius, 0.0, 0.0],
+            [0.0, speed * math.cos(angle), speed * math.sin(angle)],
+        )
+        return [sun, satellite], angle
+
+    def test_inclined_orbit_leaves_the_ecliptic(self):
+        objects, _ = self.inclined_orbit()
+        satellite = objects[1]
+
+        advance(objects, 3600.0, 2000)
+
+        out_of_plane = abs(float(satellite.getLatestState().vec_location[2]))
+        self.assertGreater(out_of_plane, 0.1 * AU,
+                           "Bahn bleibt in der Ekliptik -- z wird nicht integriert")
+
+    def test_inclination_is_preserved(self):
+        """Ohne Störung darf sich die Bahnebene nicht drehen."""
+        objects, angle = self.inclined_orbit()
+
+        before = total_angular_momentum(objects)
+        advance(objects, 3600.0, 2000)
+        after = total_angular_momentum(objects)
+
+        # Winkel zwischen den Drehimpulsvektoren -- er misst die Drehung der Ebene
+        cosine = float(np.dot(before, after) / (np.linalg.norm(before) * np.linalg.norm(after)))
+        self.assertAlmostEqual(cosine, 1.0, places=12, msg="Bahnebene kippt")
+
+        # Und die Neigung entspricht der vorgegebenen
+        normal = before / np.linalg.norm(before)
+        measured = math.acos(abs(float(normal[2])))
+        self.assertAlmostEqual(measured, angle, places=9)
+
+    def test_planar_orbit_stays_planar(self):
+        """Die Umkehrung: eine Bahn in der Ebene darf z nicht entwickeln."""
+        objects, _ = circular_orbit_pair()
+
+        advance(objects, 3600.0, 2000)
+
+        for obj in objects:
+            with self.subTest(body=obj.name):
+                self.assertEqual(obj.getLatestState().vec_location[2], 0.0)
+                self.assertEqual(obj.getLatestState().vec_velocity[2], 0.0)
+
+    def test_energy_is_conserved_on_an_inclined_orbit(self):
+        objects, _ = self.inclined_orbit()
+        before = total_energy(objects)
+
+        advance(objects, 3600.0, 2000)
+
+        drift = abs(total_energy(objects) - before) / abs(before)
+        self.assertLess(drift, 1e-6, "Gesamtenergie driftet ausserhalb der Ebene")
+
+
 class TestManeuvers(unittest.TestCase):
     """Manöver müssen zur richtigen Simulationszeit und Richtung wirken."""
 
@@ -202,7 +283,7 @@ class TestManeuvers(unittest.TestCase):
         acceleration = get_mission_acceleration(probe, time=900.0)
 
         # Prograd, also entlang +y, mit a = F/m = 500/100
-        np.testing.assert_allclose(acceleration, [0.0, 5.0], atol=1e-12)
+        np.testing.assert_allclose(acceleration, [0.0, 5.0, 0.0], atol=1e-12)
 
     def test_maneuver_is_silent_outside_its_window(self):
         probe = self.make_probe(Maneuver(time_start=600, time_duration=1000, force=500.0))
@@ -210,7 +291,8 @@ class TestManeuvers(unittest.TestCase):
         for time in (0.0, 599.0, 1600.0, 5000.0):
             with self.subTest(time=time):
                 np.testing.assert_allclose(
-                    get_mission_acceleration(probe, time), [0.0, 0.0], atol=1e-12
+                    get_mission_acceleration(probe, time), np.zeros(DIMENSIONS),
+                    atol=1e-12,
                 )
 
     def test_maneuver_respects_explicit_direction(self):
@@ -220,8 +302,8 @@ class TestManeuvers(unittest.TestCase):
 
         acceleration = get_mission_acceleration(probe, time=50.0)
 
-        # Richtung wird normiert: (3,4)/5 * 5.0
-        np.testing.assert_allclose(acceleration, [3.0, 4.0], atol=1e-12)
+        # Richtung wird normiert: (3,4,0)/5 * 5.0
+        np.testing.assert_allclose(acceleration, [3.0, 4.0, 0.0], atol=1e-12)
 
     def test_maneuver_raises_orbit(self):
         """Ein prograder Burn muss den Bahnradius messbar anheben."""

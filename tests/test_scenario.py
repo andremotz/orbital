@@ -99,8 +99,23 @@ class TestScenarioValidation(unittest.TestCase):
         self.load_and_expect_error({"name": "X", "bodies": [body]}, "mass")
 
     def test_malformed_vector(self):
-        body = dict(MINIMAL_BODY, location=[0, 0, 0])
-        self.load_and_expect_error({"name": "X", "bodies": [body]}, "2D-Vektor")
+        body = dict(MINIMAL_BODY, location=[0, 0, 0, 0])
+        self.load_and_expect_error({"name": "X", "bodies": [body]}, "[x, y, z]")
+
+    def test_two_component_vector_is_padded_to_three(self):
+        """Zweikomponentige Angaben bleiben zulässig und meinen z = 0."""
+        path = write_scenario({
+            "name": "X",
+            "bodies": [dict(MINIMAL_BODY, location=[1.0, 2.0], velocity=[3.0, 4.0])],
+        })
+        try:
+            scenario = load_scenario(path)
+        finally:
+            os.unlink(path)
+
+        state = scenario.body("Star").getLatestState()
+        np.testing.assert_allclose(state.vec_location, [1.0, 2.0, 0.0])
+        np.testing.assert_allclose(state.vec_velocity, [3.0, 4.0, 0.0])
 
     def test_unknown_relative_to(self):
         body = dict(MINIMAL_BODY, relative_to="Nowhere")
@@ -268,9 +283,24 @@ class TestMissionVerification(unittest.TestCase):
 
         report = format_report(scenario, results, collision)
 
-        self.assertIn("2D", report)
+        self.assertIn("Bekannte Grenzen", report)
         self.assertIn("Vikram-Absturz", report)
         self.assertIn("historisches Ziel", report)
+
+    def test_moon_orbit_is_inclined(self):
+        """Die Mondbahn muss aus der Ekliptik herausragen.
+
+        Genau diese Neigung war der Grund, das Modell von 2D auf 3D zu heben.
+        """
+        scenario = load_named_scenario("chandrayaan2")
+        earth = scenario.body("Earth")
+        moon = scenario.body("Moon")
+
+        offset = (moon.getLatestState().vec_location
+                  - earth.getLatestState().vec_location)
+        inclination = np.degrees(np.arcsin(offset[2] / np.linalg.norm(offset)))
+
+        self.assertAlmostEqual(inclination, 5.145, places=3)
 
 
 if __name__ == "__main__":

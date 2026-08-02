@@ -87,10 +87,11 @@ def test_rust_kernel_direct():
         
         # Erstelle Testdaten
         masses = np.array([1.989e30, 5.972e24], dtype=np.float64)  # Sonne, Erde
-        positions = np.array([[0.0, 0.0], [1.496e11, 0.0]], dtype=np.float64)
-        velocities = np.array([[0.0, 0.0], [0.0, 29780.0]], dtype=np.float64)
+        # Zustände sind dreikomponentig: [x, y, z]
+        positions = np.array([[0.0, 0.0, 0.0], [1.496e11, 0.0, 0.0]], dtype=np.float64)
+        velocities = np.array([[0.0, 0.0, 0.0], [0.0, 29780.0, 0.0]], dtype=np.float64)
         # Manöver-Schub in m/s^2, hier für beide Körper null
-        thrust = np.zeros((2, 2), dtype=np.float64)
+        thrust = np.zeros((2, 3), dtype=np.float64)
         time_step = 60.0
 
         # Führe RK4-Berechnung aus

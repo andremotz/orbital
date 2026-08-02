@@ -10,6 +10,7 @@ from data.celestial_objects import get_massive_objects
 
 # Import Rust integration
 from rust_integration import RustAcceleratedIntegrator, PerformanceBenchmark
+from rendering.utils import out_of_plane_distance, project_to_ecliptic
 
 
 class RustOrbitVisualizer:
@@ -334,7 +335,7 @@ class RustOrbitVisualizer:
             # Add position to orbital trail - ALL steps for accuracy
             for massive_object in self.massive_objects:
                 current_state = massive_object.getLatestState()
-                position = (current_state.vec_location[0], current_state.vec_location[1])
+                position = project_to_ecliptic(current_state.vec_location)
                 self.update_trail_intelligent(massive_object.name, position)
         
         # Record physics time
@@ -347,16 +348,17 @@ class RustOrbitVisualizer:
         # Focus object for camera positioning
         focus_obj = self.get_focus_object()
         focus_state = focus_obj.getLatestState()
-        self.center_x = focus_state.vec_location[0]
-        self.center_y = focus_state.vec_location[1]
+        self.center_x, self.center_y = project_to_ecliptic(focus_state.vec_location)
         
         # Update plot
         for obj in self.massive_objects:
             current_state = obj.getLatestState()
             
             # Position relative to focus
-            rel_x = (current_state.vec_location[0] - self.center_x) * self.zoom
-            rel_y = (current_state.vec_location[1] - self.center_y) * self.zoom
+            # Die Ansicht blickt senkrecht auf die Ekliptik; z fällt weg
+            projected_x, projected_y = project_to_ecliptic(current_state.vec_location)
+            rel_x = (projected_x - self.center_x) * self.zoom
+            rel_y = (projected_y - self.center_y) * self.zoom
             
             # Update planet position
             self.planet_plots[obj.name].set_data([rel_x], [rel_y])

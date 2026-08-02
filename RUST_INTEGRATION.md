@@ -121,7 +121,7 @@ Läufe (der Benchmark arbeitet auf Kopien, siehe `MassiveObject.copy()`):
 
 | Szenario | Python | Rust | Speedup |
 |----------|--------|------|---------|
-| 4 Objekte, 20000 Schritte | 0.688s | 0.093s | **7.4x** |
+| 4 Objekte, 20000 Schritte, 3D | 0.641s | 0.091s | **7.0x** |
 
 Der Python-Pfad ist über NumPy vektorisiert, deshalb fällt der Vorsprung
 kleiner aus, als ein Vergleich gegen Schleifen-Code vermuten ließe. Bei

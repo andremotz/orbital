@@ -26,12 +26,21 @@ if RUST_AVAILABLE:
 
 
 def scenario():
-    """Vier Körper mit deutlich verschiedenen Massen und Abständen."""
+    """Vier Körper mit deutlich verschiedenen Massen und Abständen.
+
+    Mond und Sonde stehen bewusst ausserhalb der Ekliptik: liefe die Parität
+    nur mit z = 0, bliebe eine Abweichung in der dritten Komponente
+    unentdeckt.
+    """
     return [
-        make_object("Sun", MASS_SUN, [0.0, 0.0], [0.0, 0.0]),
-        make_object("Earth", 5.9722e24, [0.0, AU], [29780.0, 0.0]),
-        make_object("Moon", 7.349e22, [0.0, AU + 3.56671e8], [29780.0 + 1020.0, 0.0]),
-        make_object("Probe", 100.0, [0.0, AU + 4.5475e7], [29780.0 + 2220.0, 0.0],
+        make_object("Sun", MASS_SUN, [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]),
+        make_object("Earth", 5.9722e24, [0.0, AU, 0.0], [29780.0, 0.0, 0.0]),
+        make_object("Moon", 7.349e22,
+                    [0.0, AU + 3.5523395142e8, 3.1985027687e7],
+                    [29780.0 + 1015.9, 0.0, 91.4]),
+        make_object("Probe", 100.0,
+                    [0.0, AU + 4.5475e7, 6.0e6],
+                    [29780.0 + 2220.0, 0.0, -310.0],
                     is_heavy=False),
     ]
 
@@ -53,21 +62,54 @@ class TestRustParity(unittest.TestCase):
 
         for expected, actual in zip(objects_python, objects_rust):
             with self.subTest(body=expected.name):
-                np.testing.assert_allclose(
+                self.assert_vectors_agree(
                     actual.getLatestState().vec_location,
                     expected.getLatestState().vec_location,
-                    rtol=rtol,
+                    rtol, f"{expected.name}: Position",
                 )
-                np.testing.assert_allclose(
+                self.assert_vectors_agree(
                     actual.getLatestState().vec_velocity,
                     expected.getLatestState().vec_velocity,
-                    rtol=rtol,
+                    rtol, f"{expected.name}: Geschwindigkeit",
                 )
+
+    def assert_vectors_agree(self, actual, expected, rtol, label):
+        """Vergleicht am Betrag der Abweichung, nicht Komponente für Komponente.
+
+        Eine komponentenweise Relativtoleranz bestraft kleine Komponenten
+        unverhältnismässig: die z-Komponente einer fast ebenen Bahn ist um
+        Grössenordnungen kleiner als x und y, sodass dort schon
+        Rundungsrauschen als grosse relative Abweichung erscheint, obwohl der
+        absolute Fehler im Millimeterbereich liegt.
+        """
+        deviation = float(np.linalg.norm(np.asarray(actual) - np.asarray(expected)))
+        scale = float(np.linalg.norm(expected))
+        self.assertLessEqual(
+            deviation / scale, rtol,
+            f"{label}: Abweichung {deviation:.3e} bei Betrag {scale:.3e}",
+        )
 
     def test_single_step_matches(self):
         """Ein Schritt muss bis auf Gleitkomma-Rundung exakt übereinstimmen."""
         self.assert_same_trajectory(scenario(), scenario(), steps=1,
                                     time_step=60.0, rtol=1e-12)
+
+    def test_scenario_actually_leaves_the_ecliptic(self):
+        """Absicherung: sonst prüften die Paritätstests die dritte Achse nicht."""
+        for body in scenario()[2:]:
+            with self.subTest(body=body.name):
+                self.assertNotEqual(body.getLatestState().vec_location[2], 0.0)
+                self.assertNotEqual(body.getLatestState().vec_velocity[2], 0.0)
+
+    def test_out_of_plane_motion_matches(self):
+        """Die z-Komponente muss in beiden Kernels gleich laufen."""
+        objects_python, objects_rust = scenario(), scenario()
+        self.assert_same_trajectory(objects_python, objects_rust, steps=2000,
+                                    time_step=60.0, rtol=1e-9)
+
+        # Und sie darf nicht bei null verharren, sonst ist der Test wertlos
+        drift = abs(float(objects_rust[3].getLatestState().vec_location[2] - 6.0e6))
+        self.assertGreater(drift, 1.0e5, "z-Komponente bewegt sich nicht")
 
     def test_long_run_matches(self):
         """Auch über viele Schritte darf nichts auseinanderlaufen."""

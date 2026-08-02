@@ -18,6 +18,7 @@ import os
 
 import numpy as np
 
+from data.constants import DIMENSIONS
 from models.maneuver import Maneuver
 from models.massive_object import DEFAULT_HISTORY_LENGTH, MassiveObject
 from models.state import State
@@ -101,15 +102,24 @@ def _require(mapping, key, context):
 
 
 def _vector(raw, context):
-    """Prüft und konvertiert einen zweidimensionalen Vektor."""
-    if not isinstance(raw, (list, tuple)) or len(raw) != 2:
+    """Prüft und konvertiert einen Orts- oder Geschwindigkeitsvektor.
+
+    Intern rechnet die Simulation dreikomponentig. Zweikomponentige Angaben
+    bleiben zulässig und werden mit z = 0 aufgefüllt -- eine Bahn in der
+    Ekliptik lässt sich so weiter kurz notieren.
+    """
+    if not isinstance(raw, (list, tuple)) or len(raw) not in (2, DIMENSIONS):
         raise ScenarioError(
-            f"{context}: erwartet einen 2D-Vektor [x, y], bekam {raw!r}"
+            f"{context}: erwartet einen Vektor [x, y] oder [x, y, z], "
+            f"bekam {raw!r}"
         )
     try:
-        return np.array([float(raw[0]), float(raw[1])])
+        components = [float(value) for value in raw]
     except (TypeError, ValueError):
         raise ScenarioError(f"{context}: Vektor {raw!r} ist nicht numerisch")
+
+    components += [0.0] * (DIMENSIONS - len(components))
+    return np.array(components)
 
 
 def _resolve_order(raw_bodies):

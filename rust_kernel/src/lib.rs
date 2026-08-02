@@ -13,38 +13,43 @@ use pyo3::prelude::*;
 /// Gravitationskonstante in m^3/(kg*s^2)
 const G: f64 = 6.6743e-11;
 
+/// Komponenten je Zustandsvektor. Muss mit `DIMENSIONS` in
+/// `data/constants.py` übereinstimmen.
+const DIMENSIONS: usize = 3;
+
 /// Gravitative Beschleunigung aller Körper in m/s^2.
 ///
-/// `positions` und das Ergebnis sind flach als [x0, y0, x1, y1, ...] abgelegt.
-/// Der Schub wird direkt aufaddiert, damit die Stufen ihn mitführen.
+/// `positions` und das Ergebnis sind flach als [x0, y0, z0, x1, y1, z1, ...]
+/// abgelegt. Der Schub wird direkt aufaddiert, damit die Stufen ihn mitführen.
 fn accelerations(positions: &[f64], masses: &[f64], thrust: &[f64], out: &mut [f64]) {
     let n = masses.len();
     out.copy_from_slice(thrust);
 
-    for i in 0..n {
-        let xi = positions[i * 2];
-        let yi = positions[i * 2 + 1];
+    let mut delta = [0.0; DIMENSIONS];
 
+    for i in 0..n {
         // Nur die obere Dreiecksmatrix auswerten und Newtons drittes Gesetz
         // ausnutzen -- halbiert die Anzahl der Wurzelberechnungen.
         for j in (i + 1)..n {
-            let dx = positions[j * 2] - xi;
-            let dy = positions[j * 2 + 1] - yi;
+            let mut distance_squared = 0.0;
+            for axis in 0..DIMENSIONS {
+                let component = positions[j * DIMENSIONS + axis] - positions[i * DIMENSIONS + axis];
+                delta[axis] = component;
+                distance_squared += component * component;
+            }
 
-            let distance_squared = dx * dx + dy * dy;
             if distance_squared == 0.0 {
                 continue;
             }
 
             let inverse_cube = 1.0 / (distance_squared * distance_squared.sqrt());
-
             let pull_i = G * masses[j] * inverse_cube;
-            out[i * 2] += pull_i * dx;
-            out[i * 2 + 1] += pull_i * dy;
-
             let pull_j = G * masses[i] * inverse_cube;
-            out[j * 2] -= pull_j * dx;
-            out[j * 2 + 1] -= pull_j * dy;
+
+            for axis in 0..DIMENSIONS {
+                out[i * DIMENSIONS + axis] += pull_i * delta[axis];
+                out[j * DIMENSIONS + axis] -= pull_j * delta[axis];
+            }
         }
     }
 }
@@ -108,8 +113,8 @@ pub fn rk4_step(
 
 /// Ein RK4-Schritt für das gesamte System.
 ///
-/// Erwartet `masses` (n,), `positions` (n, 2), `velocities` (n, 2) und
-/// `thrust` (n, 2) in m/s^2. Zurück kommen neue Positionen und
+/// Erwartet `masses` (n,), `positions` (n, 3), `velocities` (n, 3) und
+/// `thrust` (n, 3) in m/s^2. Zurück kommen neue Positionen und
 /// Geschwindigkeiten als frische Arrays.
 #[pyfunction]
 fn rk4_step_python(
@@ -128,10 +133,10 @@ fn rk4_step_python(
         ("thrust", thrust),
     ] {
         let shape = array.shape();
-        if shape != [n_objects, 2] {
+        if shape != [n_objects, DIMENSIONS] {
             return Err(PyValueError::new_err(format!(
-                "{} muss die Form ({}, 2) haben, ist aber {:?}",
-                name, n_objects, shape
+                "{} muss die Form ({}, {}) haben, ist aber {:?}",
+                name, n_objects, DIMENSIONS, shape
             )));
         }
     }
@@ -160,9 +165,9 @@ fn rk4_step_python(
     Ok((new_positions.into(), new_velocities.into()))
 }
 
-/// Formt einen flachen [x0, y0, x1, y1, ...]-Puffer in Zeilenpaare um.
+/// Formt einen flachen [x0, y0, z0, x1, ...]-Puffer in Zeilen um.
 fn to_rows(flat: &[f64]) -> Vec<Vec<f64>> {
-    flat.chunks(2).map(|pair| pair.to_vec()).collect()
+    flat.chunks(DIMENSIONS).map(|row| row.to_vec()).collect()
 }
 
 #[pymodule]

@@ -6,9 +6,9 @@
   "source": "https://en.wikipedia.org/wiki/Chandrayaan-2",
 
   "limitations": [
-    "Die Simulation rechnet in 2D. Die Mondbahn ist rund 5,1 Grad gegen die Ekliptik geneigt, und der reale Transfer hatte Komponenten ausserhalb der Bahnebene -- die Mission ist in dieser Naeherung nicht reproduzierbar.",
-    "Die sechs erdnahen Bahnanhebungen und der trans-lunare Einschuss sind hier nicht als reale Brennprofile hinterlegt, sondern als Platzhalter.",
-    "Startzustaende sind osculating Werte aus veroeffentlichten Bahnangaben, keine Ephemeriden. Fuer belastbare Rechnungen waeren NASA-Horizons-Daten noetig."
+    "Die sechs erdnahen Bahnanhebungen und der trans-lunare Einschuss sind hier nicht als reale Brennprofile hinterlegt, sondern als Platzhalter. Ohne sie erreicht die Sonde den Mond nicht.",
+    "Startzustaende sind osculating Werte aus veroeffentlichten Bahnangaben, keine Ephemeriden. Insbesondere sind die Bahnebenen zueinander nicht aus echten Knotenlaengen abgeleitet. Fuer belastbare Rechnungen waeren NASA-Horizons-Daten noetig.",
+    "Die Erdbahn ist als Kreis genaehert, die Mondbahn startet im Perigaeum statt auf einer exzentrischen Bahn."
   ],
 
   "bodies": [
@@ -40,10 +40,10 @@
       "radius": 1737000,
       "color": [255, 255, 255],
       "is_heavy": true,
-      "location": [0, 3.56671e8],
-      "velocity": [1020, 0],
+      "location": [0, 3.5523395142e8, 3.1985027687e7],
+      "velocity": [1020, 0, 0],
       "source": "https://de.wikipedia.org/wiki/Mond",
-      "note": "Abstand im Perigaeum; die reale Bahn ist exzentrisch (363.300 bis 405.500 km)."
+      "note": "Abstand im Perigaeum; die reale Bahn ist exzentrisch (363.300 bis 405.500 km). Die Bahnebene ist um 5,145 Grad gegen die Ekliptik geneigt, mit der Knotenlinie entlang x -- daher die z-Komponente von 31.985 km. Genau diese Neigung macht einen Mondtransfer zu einem dreidimensionalen Problem."
     },
     {
       "name": "Chandrayaan-2",
