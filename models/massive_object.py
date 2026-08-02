@@ -1,5 +1,7 @@
 from collections import deque
 
+from data.constants import CONST_GRAVITY
+
 from .state import State
 
 # Wie viele Zustände je Körper vorgehalten werden. Die Simulation selbst
@@ -13,8 +15,13 @@ class MassiveObject:
     """Klasse repräsentiert ein massives Objekt im Weltraum"""
 
     def __init__(self, state_new, mass, radius, color, name, is_heavy,
-                 list_maneuvers, history_length=DEFAULT_HISTORY_LENGTH):
+                 list_maneuvers, history_length=DEFAULT_HISTORY_LENGTH,
+                 oblateness=None, mu=None):
         self.mass = mass
+        # Standard-Gravitationsparameter GM. Er, nicht die Masse, bestimmt die
+        # Anziehung; siehe die Erläuterung in data/constants.py. Ohne Angabe
+        # wird er aus der Masse gebildet, was die Genauigkeit von G erbt.
+        self.mu = float(mu) if mu is not None else CONST_GRAVITY * mass
         self.listStates = deque(maxlen=history_length)
         self.addState(state_new)
         self.radius = radius
@@ -22,6 +29,8 @@ class MassiveObject:
         self.name = name
         self.is_heavy = is_heavy
         self.list_maneuvers = list_maneuvers
+        # Abplattung; None bedeutet, der Körper wird als Kugel gerechnet
+        self.oblateness = oblateness
 
     def addState(self, state_new):
         """Fügt einen neuen Zustand hinzu; der älteste fällt heraus"""
@@ -47,4 +56,6 @@ class MassiveObject:
             self.is_heavy,
             list(self.list_maneuvers),
             self.listStates.maxlen,
+            self.oblateness,
+            self.mu,
         )

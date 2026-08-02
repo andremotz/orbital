@@ -155,22 +155,32 @@ class TestRustKernelContract(unittest.TestCase):
 
     def test_rejects_mismatched_shapes(self):
         objects, _ = circular_orbit_pair()
-        masses, positions, velocities, thrust = gather_arrays(objects, 0.0)
+        mus, positions, velocities, thrust, j2, radii, poles = gather_arrays(objects, 0.0)
 
         with self.assertRaises(ValueError):
             orbital_rust_kernel.rk4_step_python(
-                masses, positions[:1], velocities, thrust, 60.0
+                mus, positions[:1], velocities, thrust, j2, radii, poles, 60.0
+            )
+
+    def test_rejects_mismatched_oblateness_length(self):
+        objects, _ = circular_orbit_pair()
+        mus, positions, velocities, thrust, j2, radii, poles = gather_arrays(objects, 0.0)
+
+        with self.assertRaises(ValueError):
+            orbital_rust_kernel.rk4_step_python(
+                mus, positions, velocities, thrust, j2[:1], radii, poles, 60.0
             )
 
     def test_accepts_non_contiguous_input(self):
         """Ein Array-Slice darf keinen stillen Speicherfehler auslösen."""
         objects = scenario()
-        masses, positions, velocities, thrust = gather_arrays(objects, 0.0)
+        mus, positions, velocities, thrust, j2, radii, poles = gather_arrays(objects, 0.0)
 
         # Jede zweite Zeile -- der zugrundeliegende Speicher ist nicht mehr zusammenhängend
         with self.assertRaises(Exception):
             orbital_rust_kernel.rk4_step_python(
-                masses[::2], positions[::2], velocities[::2], thrust[::2], 60.0
+                mus[::2], positions[::2], velocities[::2], thrust[::2],
+                j2[::2], radii[::2], poles[::2], 60.0
             )
 
 

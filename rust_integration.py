@@ -12,6 +12,7 @@ from typing import List
 
 import numpy as np
 
+from data.constants import DIMENSIONS
 from models.state import State
 from physics.integrator import step as python_step
 from physics.mission import get_mission_acceleration
@@ -28,8 +29,13 @@ except ImportError as e:
 
 
 def gather_arrays(massive_objects: List, time: float):
-    """Sammelt Massen, Positionen, Geschwindigkeiten und Schub als Arrays."""
-    masses = np.array([obj.mass for obj in massive_objects], dtype=np.float64)
+    """Sammelt alles, was der Kernel für einen Schritt braucht.
+
+    Übergeben wird GM je Körper, nicht die Masse -- siehe die Begründung bei
+    den Konstanten. Die Abplattung reist als drei parallele Arrays mit; ein
+    j2 von null bedeutet, dass der Körper als Kugel gilt.
+    """
+    mus = np.array([obj.mu for obj in massive_objects], dtype=np.float64)
     positions = np.array(
         [obj.getLatestState().vec_location for obj in massive_objects], dtype=np.float64
     )
@@ -40,7 +46,20 @@ def gather_arrays(massive_objects: List, time: float):
         [get_mission_acceleration(obj, time, massive_objects) for obj in massive_objects],
         dtype=np.float64,
     )
-    return masses, positions, velocities, thrust
+
+    count = len(massive_objects)
+    j2 = np.zeros(count, dtype=np.float64)
+    equatorial_radii = np.zeros(count, dtype=np.float64)
+    poles = np.zeros((count, DIMENSIONS), dtype=np.float64)
+    for index, obj in enumerate(massive_objects):
+        oblateness = getattr(obj, "oblateness", None)
+        if oblateness is None:
+            continue
+        j2[index] = oblateness.j2
+        equatorial_radii[index] = oblateness.equatorial_radius
+        poles[index] = oblateness.pole
+
+    return mus, positions, velocities, thrust, j2, equatorial_radii, poles
 
 
 class RustAcceleratedIntegrator:
@@ -65,10 +84,11 @@ class RustAcceleratedIntegrator:
             return
 
         try:
-            masses, positions, velocities, thrust = gather_arrays(massive_objects, time)
+            arrays = gather_arrays(massive_objects, time)
+            mus, positions, velocities, thrust, j2, radii, poles = arrays
 
             new_positions, new_velocities = orbital_rust_kernel.rk4_step_python(
-                masses, positions, velocities, thrust, time_step
+                mus, positions, velocities, thrust, j2, radii, poles, time_step
             )
 
             for obj, vec_location, vec_velocity in zip(

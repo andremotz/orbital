@@ -1,7 +1,7 @@
 import numpy as np
 
 from models.state import State
-from .gravity import accelerations
+from .gravity import accelerations, oblateness_accelerations
 from .mission import get_mission_acceleration
 
 
@@ -23,7 +23,7 @@ def step(list_massiveObject, time_step, time=0.0):
     velocities = np.array(
         [obj.getLatestState().vec_velocity for obj in list_massiveObject], dtype=float
     )
-    masses = np.array([obj.mass for obj in list_massiveObject], dtype=float)
+    mus = np.array([obj.mu for obj in list_massiveObject], dtype=float)
 
     # Schub wird einmal für den gesamten Schritt bestimmt: Manöver sind über
     # ihre Dauer konstant, und ein Zeitschritt ist kurz gegen die Brenndauer.
@@ -33,9 +33,19 @@ def step(list_massiveObject, time_step, time=0.0):
         dtype=float,
     )
 
+    has_oblateness = any(
+        getattr(obj, "oblateness", None) is not None for obj in list_massiveObject
+    )
+
     def derivatives(pos, vel):
         """Liefert (dx/dt, dv/dt) für den übergebenen Systemzustand."""
-        return vel, accelerations(pos, masses) + thrust
+        acceleration = accelerations(pos, mus) + thrust
+        if has_oblateness:
+            # Positionsabhängig, muss also in jeder Stufe neu bestimmt werden
+            acceleration = acceleration + oblateness_accelerations(
+                pos, list_massiveObject
+            )
+        return vel, acceleration
 
     half_step = time_step / 2.0
 

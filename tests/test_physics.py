@@ -18,11 +18,16 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from data.constants import CONST_GRAVITY, DIMENSIONS
+from data.constants import CONST_GRAVITY, DIMENSIONS, GM_EARTH, GM_SUN
 from models.maneuver import Maneuver
 from models.massive_object import MassiveObject
+from models.oblateness import Oblateness
 from models.state import State
-from physics.gravity import accelerations, get_acceleration
+from physics.gravity import (
+    accelerations,
+    get_acceleration,
+    oblateness_accelerations,
+)
 from physics.integrator import step
 from physics.mission import get_mission_acceleration
 
@@ -119,13 +124,113 @@ class TestAcceleration(unittest.TestCase):
         """`accelerations` und `get_acceleration` müssen übereinstimmen."""
         objects, _ = circular_orbit_pair()
         positions = np.array([obj.getLatestState().vec_location for obj in objects])
-        masses = np.array([obj.mass for obj in objects])
+        mus = np.array([obj.mu for obj in objects])
 
-        batch = accelerations(positions, masses)
+        batch = accelerations(positions, mus)
 
         for index, obj in enumerate(objects):
             single = get_acceleration(obj, obj.getLatestState(), objects)
             np.testing.assert_allclose(batch[index], single, rtol=1e-12)
+
+
+class TestGravitationalParameter(unittest.TestCase):
+    """GM ist die maßgebliche Grösse, nicht Masse mal Gravitationskonstante."""
+
+    def test_mu_defaults_to_mass_times_g(self):
+        body = make_object("X", 1.0e24, [0.0, 0.0], [0.0, 0.0])
+        self.assertAlmostEqual(body.mu, CONST_GRAVITY * 1.0e24, places=6)
+
+    def test_explicit_mu_overrides_mass(self):
+        """Ein angegebenes GM muss die Anziehung bestimmen, nicht die Masse."""
+        state = State(np.zeros(DIMENSIONS), np.zeros(DIMENSIONS))
+        body = MassiveObject(state, 1.0, 1.0, (0, 0, 0), "X", True, [], mu=GM_EARTH)
+
+        self.assertEqual(body.mu, GM_EARTH)
+
+        probe = make_object("P", 1.0, [7.0e6, 0.0], [0.0, 0.0], is_heavy=False)
+        acceleration = get_acceleration(probe, probe.getLatestState(), [body, probe])
+
+        self.assertAlmostEqual(
+            float(np.linalg.norm(acceleration)) / (GM_EARTH / 7.0e6 ** 2), 1.0, places=9
+        )
+
+    def test_published_gm_differs_from_mass_times_g(self):
+        """Die Abweichung ist der Grund für die Umstellung -- sie ist real."""
+        mass_based = CONST_GRAVITY * 1.989e30
+        relative = abs(mass_based - GM_SUN) / GM_SUN
+
+        self.assertGreater(relative, 1e-4,
+                           "Wenn beide übereinstimmen, ist die Begründung hinfällig")
+
+
+class TestOblateness(unittest.TestCase):
+    """Abplattung der Erde, die stärkste Störung im erdnahen Orbit."""
+
+    def earth_and_probe(self, offset):
+        state = State(np.zeros(DIMENSIONS), np.zeros(DIMENSIONS))
+        earth = MassiveObject(state, 5.9722e24, 6.371e6, (0, 0, 0), "Earth", True, [],
+                              mu=GM_EARTH, oblateness=Oblateness.earth())
+        probe = make_object("Probe", 1000.0, offset, [0.0, 0.0, 0.0], is_heavy=False)
+        return [earth, probe]
+
+    def test_magnitude_matches_closed_form(self):
+        """Im Äquator der Erde muss der Betrag der Formel 1.5*J2*mu*Re^2/r^4 folgen."""
+        radius = 7.0e6
+        # Senkrecht zur Polachse, damit der Anteil längs des Pols verschwindet
+        pole = Oblateness.earth().pole
+        equatorial = np.cross(pole, [0.0, 0.0, 1.0])
+        equatorial = equatorial / np.linalg.norm(equatorial)
+
+        bodies = self.earth_and_probe(equatorial * radius)
+        positions = np.array([b.getLatestState().vec_location for b in bodies])
+
+        extra = oblateness_accelerations(positions, bodies)
+
+        expected = 1.5 * Oblateness.earth().j2 * GM_EARTH * \
+            Oblateness.earth().equatorial_radius ** 2 / radius ** 4
+        self.assertAlmostEqual(
+            float(np.linalg.norm(extra[1])) / expected, 1.0, places=6
+        )
+
+    def test_falls_off_as_inverse_fourth_power(self):
+        pole = Oblateness.earth().pole
+        equatorial = np.cross(pole, [0.0, 0.0, 1.0])
+        equatorial = equatorial / np.linalg.norm(equatorial)
+
+        magnitudes = []
+        for radius in (7.0e6, 1.4e7):
+            bodies = self.earth_and_probe(equatorial * radius)
+            positions = np.array([b.getLatestState().vec_location for b in bodies])
+            magnitudes.append(float(np.linalg.norm(
+                oblateness_accelerations(positions, bodies)[1]
+            )))
+
+        # Radius verdoppelt -> Beitrag auf ein Sechzehntel
+        self.assertAlmostEqual(magnitudes[0] / magnitudes[1], 16.0, places=4)
+
+    def test_acts_around_the_rotation_axis_not_the_ecliptic(self):
+        """Auf der Polachse muss der Beitrag längs des Pols zeigen.
+
+        Läge die Wulst fälschlich um die z-Achse der Ekliptik, zeigte er in
+        eine um 23,44 Grad verdrehte Richtung.
+        """
+        pole = Oblateness.earth().pole
+        bodies = self.earth_and_probe(pole * 7.0e6)
+        positions = np.array([b.getLatestState().vec_location for b in bodies])
+
+        extra = oblateness_accelerations(positions, bodies)[1]
+        direction = extra / np.linalg.norm(extra)
+
+        # Antiparallel zum Pol: über den Polen zieht die Wulst nach innen
+        self.assertAlmostEqual(abs(float(np.dot(direction, pole))), 1.0, places=9)
+
+    def test_spherical_bodies_contribute_nothing(self):
+        objects, _ = circular_orbit_pair()
+        positions = np.array([o.getLatestState().vec_location for o in objects])
+
+        np.testing.assert_array_equal(
+            oblateness_accelerations(positions, objects), np.zeros_like(positions)
+        )
 
 
 class TestConservation(unittest.TestCase):
