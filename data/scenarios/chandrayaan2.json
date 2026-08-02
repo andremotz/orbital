@@ -11,8 +11,8 @@
   },
   "limitations": [
     "Modelliert werden nur Sonne, Erde und Mond samt Erdabplattung J2. Nicht enthalten sind die uebrigen Planeten, Strahlungsdruck, Restatmosphaere und hoehere Terme des Erdschwerefelds. Im Perigaeum bleibt dadurch eine Restabweichung von einigen m/s je Durchgang.",
-    "Die Manoever sind als gleichmaessiger Schub ueber die erkannte Dauer angenaehert. Das reale Brennprofil war nicht konstant, und die Aufloesung der Erkennung betraegt 10 Minuten.",
-    "Ohne Zielsteuerung summieren sich die Abweichungen ueber die Mission auf. Die Bahn folgt der realen ueber Tage, nicht ueber Wochen."
+    "Die Manoever sind als gleichmaessiger Schub ueber die erkannte Dauer angenaehert; die erdnahen Anhebungen zuenden am Perigaeum, die spaeteren noch nach der Uhr.",
+    "Die Delta-v-Werte stammen von der real geflogenen Bahn. Auf einer bereits abweichenden Bahn wirkt dasselbe Delta-v anders, deshalb bleibt das erreichte Apogaeum hinter dem realen zurueck. Das bruechte eine Zielsteuerung, die das Delta-v auf ein Zielapogaeum hin nachfuehrt."
   ],
   "bodies": [
     {
@@ -122,7 +122,6 @@
   "maneuvers": [
     {
       "body": "Chandrayaan-2",
-      "time_start": 293400.0,
       "duration": 1800.0,
       "delta_v": 97.107,
       "direction": [
@@ -131,12 +130,17 @@
         0.067973
       ],
       "detected_at": "2019-Jul-25 19:30",
-      "note": "EBN#2 Bahnanhebung",
-      "relative_to": "Earth"
+      "note": "EBN#2 Bahnanhebung Zuendet am Perigaeum statt nach der Uhr: dort bringt dasselbe Delta-v die meiste Energie ein.",
+      "relative_to": "Earth",
+      "trigger": {
+        "type": "periapsis",
+        "reference": "Earth",
+        "after": 289800.0
+      },
+      "planned_at": 293400.0
     },
     {
       "body": "Chandrayaan-2",
-      "time_start": 603600.0,
       "duration": 1800.0,
       "delta_v": 109.623,
       "direction": [
@@ -145,12 +149,17 @@
         0.08286
       ],
       "detected_at": "2019-Jul-29 09:40",
-      "note": "EBN#3 Bahnanhebung",
-      "relative_to": "Earth"
+      "note": "EBN#3 Bahnanhebung Zuendet am Perigaeum statt nach der Uhr: dort bringt dasselbe Delta-v die meiste Energie ein.",
+      "relative_to": "Earth",
+      "trigger": {
+        "type": "periapsis",
+        "reference": "Earth",
+        "after": 600000.0
+      },
+      "planned_at": 603600.0
     },
     {
       "body": "Chandrayaan-2",
-      "time_start": 949800.0,
       "duration": 1800.0,
       "delta_v": 74.225,
       "direction": [
@@ -159,12 +168,17 @@
         0.100933
       ],
       "detected_at": "2019-Aug-02 09:50",
-      "note": "EBN#4 Bahnanhebung",
-      "relative_to": "Earth"
+      "note": "EBN#4 Bahnanhebung Zuendet am Perigaeum statt nach der Uhr: dort bringt dasselbe Delta-v die meiste Energie ein.",
+      "relative_to": "Earth",
+      "trigger": {
+        "type": "periapsis",
+        "reference": "Earth",
+        "after": 946200.0
+      },
+      "planned_at": 949800.0
     },
     {
       "body": "Chandrayaan-2",
-      "time_start": 1294200.0,
       "duration": 1800.0,
       "delta_v": 125.565,
       "direction": [
@@ -173,12 +187,17 @@
         0.00059
       ],
       "detected_at": "2019-Aug-06 09:30",
-      "note": "EBN#5 Bahnanhebung",
-      "relative_to": "Earth"
+      "note": "EBN#5 Bahnanhebung Zuendet am Perigaeum statt nach der Uhr: dort bringt dasselbe Delta-v die meiste Energie ein.",
+      "relative_to": "Earth",
+      "trigger": {
+        "type": "periapsis",
+        "reference": "Earth",
+        "after": 1290600.0
+      },
+      "planned_at": 1294200.0
     },
     {
       "body": "Chandrayaan-2",
-      "time_start": 1939800.0,
       "duration": 1800.0,
       "delta_v": 148.678,
       "direction": [
@@ -187,8 +206,14 @@
         0.061559
       ],
       "detected_at": "2019-Aug-13 20:50",
-      "note": "Trans-lunarer Einschuss (TLI)",
-      "relative_to": "Earth"
+      "note": "Trans-lunarer Einschuss (TLI) Zuendet am Perigaeum statt nach der Uhr: dort bringt dasselbe Delta-v die meiste Energie ein.",
+      "relative_to": "Earth",
+      "trigger": {
+        "type": "periapsis",
+        "reference": "Earth",
+        "after": 1936200.0
+      },
+      "planned_at": 1939800.0
     },
     {
       "body": "Chandrayaan-2",

@@ -1,0 +1,257 @@
+{
+  "name": "Artemis II",
+  "description": "Erster bemannter Mondflug des Artemis-Programms: Reid Wiseman, Victor Glover, Christina Koch und Jeremy Hansen umrundeten den Mond auf einer freien Rueckkehrbahn. Start am 1. April 2026 um 22:35:12 UTC mit einer SLS von Pad LC-39B, Wasserung am 11. April im Pazifik vor Baja California. Die Orion-Kapsel traegt den Namen \"Integrity\".",
+  "epoch": "2026-04-02T02:10:00 TDB",
+  "time_step": 60,
+  "source": "Startzustaende, Bahn und Brennprofil aus JPL Horizons (-1024); Ereignisplan aus dem NASA-Presskit",
+  "provenance": {
+    "initial_state": "JPL Horizons -1024, kurz nach Orion/ICPS-Trennung -- davor liegt keine Ephemeride vor.",
+    "maneuvers": "Aus der geflogenen Bahn abgeleitet, siehe detect_maneuvers.py. TLI und OTC-3 treffen die veroeffentlichten Delta-v-Werte von 388 bzw. 3 m/s.",
+    "frame": "Ekliptik J2000; Artemis II geozentrisch, die Koerper bezogen auf den Schwerpunkt des Sonnensystems"
+  },
+  "limitations": [
+    "Die Ephemeride beginnt erst nach der ICPS-Trennung, der Start und die ersten Manoever fehlen daher.",
+    "Sieben weitere Ausschlaege wurden als fehlerhafte Stuetzpunkte verworfen, weil sich ihre Beitraege gegenseitig aufheben statt die Bahn bleibend zu aendern.",
+    "Modelliert werden nur Sonne, Erde und Mond samt Erdabplattung J2.",
+    "Die Brenndauern stammen aus der Erkennung mit zehn Minuten Aufloesung; nur beim TLI ist die veroeffentlichte Dauer von 355 s hinterlegt. Bei den uebrigen Manoevern ist der Schub daher ueber einen zu langen Zeitraum verschmiert."
+  ],
+  "bodies": [
+    {
+      "name": "Sun",
+      "mu": 1.3271244004127942e+20,
+      "mass": 1.988409871316534e+30,
+      "radius": 696342000.0,
+      "color": [
+        255,
+        255,
+        0
+      ],
+      "is_heavy": true,
+      "location": [
+        -362543738.96809983,
+        -819389144.2163476,
+        17806222.27309371
+      ],
+      "velocity": [
+        12.00579646089864,
+        1.859257036145973,
+        -0.2434888883098323
+      ],
+      "source": "JPL Horizons DE441"
+    },
+    {
+      "name": "Earth",
+      "mu": 398600435507000.0,
+      "mass": 5.972168399787245e+24,
+      "radius": 6371000.0,
+      "color": [
+        0,
+        255,
+        255
+      ],
+      "is_heavy": true,
+      "location": [
+        -146610027342.0269,
+        -31873337431.70699,
+        20722770.99031396
+      ],
+      "velocity": [
+        5713.473479908474,
+        -29236.72181083804,
+        2.4209045412870718
+      ],
+      "source": "JPL Horizons DE441",
+      "oblateness": {
+        "j2": 0.00108262668,
+        "equatorial_radius": 6378137.0,
+        "pole": [
+          0.0,
+          -0.39777715575399053,
+          0.917482062146321
+        ]
+      }
+    },
+    {
+      "name": "Moon",
+      "mu": 4902800019630.0,
+      "mass": 7.345789100924442e+22,
+      "radius": 1737400.0,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "is_heavy": true,
+      "location": [
+        -146994590044.478,
+        -31954780956.20104,
+        976217.3157799989
+      ],
+      "velocity": [
+        5886.261530474031,
+        -30222.81215008871,
+        -74.90664367032807
+      ],
+      "source": "JPL Horizons DE441"
+    },
+    {
+      "name": "Artemis II",
+      "relative_to": "Earth",
+      "mass": 26520,
+      "radius": 10,
+      "color": [
+        0,
+        255,
+        128
+      ],
+      "is_heavy": false,
+      "location": [
+        -25616662.916517522,
+        -16929108.390231077,
+        -1510433.1002069379
+      ],
+      "velocity": [
+        -1578.679936957449,
+        -3707.865875738562,
+        -321.7100296529578
+      ],
+      "source": "JPL Horizons -1024",
+      "note": "Orion-Kapsel \"Integrity\" mit Servicemodul, rund 26,5 t. Geozentrisch angegeben, weil Horizons die Bahnloesung in diesem Bezug fuehrt."
+    }
+  ],
+  "maneuvers": [
+    {
+      "body": "Artemis II",
+      "relative_to": "Earth",
+      "time_start": 3000.0,
+      "duration": 600.0,
+      "delta_v": 2.019,
+      "direction": [
+        0.951652,
+        -0.267836,
+        -0.150408
+      ],
+      "detected_at": "2026-Apr-02 03:00",
+      "coherence": 1.0,
+      "note": "Frueher Korrekturschub nach ICPS-Trennung"
+    },
+    {
+      "body": "Artemis II",
+      "relative_to": "Earth",
+      "time_start": 4200.0,
+      "duration": 600.0,
+      "delta_v": 14.944,
+      "direction": [
+        0.9971,
+        -0.046841,
+        -0.059983
+      ],
+      "detected_at": "2026-Apr-02 03:20",
+      "coherence": 1.0,
+      "note": "Frueher Korrekturschub nach ICPS-Trennung"
+    },
+    {
+      "body": "Artemis II",
+      "relative_to": "Earth",
+      "time_start": 35400.0,
+      "duration": 1200.0,
+      "delta_v": 6.438,
+      "direction": [
+        0.848573,
+        0.050958,
+        0.526619
+      ],
+      "detected_at": "2026-Apr-02 12:00",
+      "coherence": 1.0,
+      "note": "Perigaeumsanhebung (NASA: 2.4. 11:30)"
+    },
+    {
+      "body": "Artemis II",
+      "relative_to": "Earth",
+      "duration": 355.0,
+      "delta_v": 388.302,
+      "direction": [
+        -0.913396,
+        0.251357,
+        -0.3202
+      ],
+      "detected_at": "2026-Apr-02 23:40",
+      "coherence": 0.993,
+      "note": "Trans-lunarer Einschuss TLI. NASA: 2.4.2026 23:49 UTC, Brenndauer 5 min 55 s, Delta-v 388 m/s -- die Erkennung liefert 388,3 m/s. Zuendet am Perigaeum statt nach der Uhr und mit der veroeffentlichten Brenndauer: beides zusammen bringt die groesste Erdentfernung von 277.000 auf 418.000 km, gegen real 413.146 km.",
+      "planned_at": 77400.0,
+      "trigger": {
+        "type": "periapsis",
+        "reference": "Earth",
+        "after": 72000.0
+      }
+    },
+    {
+      "body": "Artemis II",
+      "relative_to": "Earth",
+      "time_start": 348600.0,
+      "duration": 600.0,
+      "delta_v": 3.017,
+      "direction": [
+        0.529752,
+        -0.188252,
+        0.826997
+      ],
+      "detected_at": "2026-Apr-06 03:00",
+      "coherence": 1.0,
+      "note": "Bahnkorrektur OTC-3 (NASA: 6.4. 03:03, 3 m/s)"
+    },
+    {
+      "body": "Artemis II",
+      "relative_to": "Earth",
+      "time_start": 460200.0,
+      "duration": 600.0,
+      "delta_v": 2.544,
+      "direction": [
+        0.77493,
+        -0.411204,
+        0.479995
+      ],
+      "detected_at": "2026-Apr-07 10:00",
+      "coherence": 1.0,
+      "note": "Bahnkorrektur auf dem Rueckweg"
+    }
+  ],
+  "milestones": [
+    {
+      "name": "Dichteste Mondannaeherung",
+      "date": "2026-04-06",
+      "time": 420660.0,
+      "body": "Artemis II",
+      "relative_to": "Moon",
+      "expected_distance": 8282000.0,
+      "tolerance": 500000.0,
+      "status": "aspirational",
+      "note": "Laut NASA-Ereignisplan 8282 km vom Mondmittelpunkt. Die Crew umrundete den Mond auf einer freien Rueckkehrbahn ohne Einschuss in eine Mondumlaufbahn.",
+      "source": "https://www.nasa.gov/artemis-ii-press-kit/"
+    },
+    {
+      "name": "Groesste Erdentfernung",
+      "date": "2026-04-06",
+      "time": 420900.0,
+      "body": "Artemis II",
+      "relative_to": "Earth",
+      "expected_distance": 413146200.0,
+      "tolerance": 500000.0,
+      "status": "aspirational",
+      "note": "413.146,2 km laut NASA-Ereignisplan -- der weiteste Punkt, den Menschen je von der Erde entfernt waren.",
+      "source": "https://www.nasa.gov/artemis-ii-press-kit/"
+    },
+    {
+      "name": "Eintrittsschnittstelle",
+      "date": "2026-04-10",
+      "time": 769380.0,
+      "body": "Artemis II",
+      "relative_to": "Earth",
+      "expected_distance": 6493000.0,
+      "tolerance": 100000.0,
+      "status": "aspirational",
+      "note": "122 km ueber der Erdoberflaeche, Beginn des Wiedereintritts. Wasserung 14 Minuten spaeter im Pazifik.",
+      "source": "https://www.nasa.gov/artemis-ii-press-kit/"
+    }
+  ]
+}

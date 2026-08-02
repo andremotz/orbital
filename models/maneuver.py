@@ -22,14 +22,18 @@ class Maneuver:
     nie gewollt ist.
     """
 
-    def __init__(self, time_start, time_duration, force=None, direction=None,
-                 relative_to=None, delta_v=None):
+    def __init__(self, time_start=None, time_duration=None, force=None,
+                 direction=None, relative_to=None, delta_v=None, trigger=None):
         if (force is None) == (delta_v is None):
             raise ValueError(
                 "Genau eines von 'force' und 'delta_v' muss angegeben sein"
             )
-        if time_duration <= 0:
+        if time_duration is None or time_duration <= 0:
             raise ValueError("'time_duration' muss positiv sein")
+        if (time_start is None) == (trigger is None):
+            raise ValueError(
+                "Genau eines von 'time_start' und 'trigger' muss angegeben sein"
+            )
 
         self.time_start = time_start
         self.time_duration = time_duration
@@ -37,6 +41,38 @@ class Maneuver:
         self.delta_v = delta_v
         self.direction = _as_vector(direction)
         self.relative_to = relative_to
+
+        # Ohne Auslöser zündet das Manöver zur festen Zeit; mit Auslöser wird
+        # der Zündzeitpunkt erst im Lauf bestimmt und hier festgehalten.
+        self.trigger = trigger
+        self.activated_at = None if trigger is not None else time_start
+
+    @property
+    def earliest_time(self):
+        """Frühester Zeitpunkt, zu dem das Manöver zünden kann.
+
+        Bei fester Zeit ist das der Zündzeitpunkt selbst, bei einem Auslöser
+        die Sperrfrist davor. Erlaubt es, Manöver zu ordnen und einzuplanen,
+        ohne den Lauf schon zu kennen.
+        """
+        if self.time_start is not None:
+            return self.time_start
+        return getattr(self.trigger, "after", 0.0)
+
+    def is_active(self, time):
+        """Läuft das Triebwerk zu diesem Zeitpunkt?"""
+        if self.activated_at is None:
+            return False
+        return self.activated_at <= time < self.activated_at + self.time_duration
+
+    def reset(self):
+        """Setzt einen ausgelösten Zündzeitpunkt zurück.
+
+        Nötig, wenn dieselben Manöver in einem zweiten Lauf verwendet werden --
+        sonst gälten sie als bereits gezündet.
+        """
+        if self.trigger is not None:
+            self.activated_at = None
 
     def acceleration_magnitude(self, mass):
         """Betrag der Beschleunigung in m/s^2 während der Brenndauer."""

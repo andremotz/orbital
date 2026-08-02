@@ -83,3 +83,47 @@ def elements_from_state(vec_location, vec_velocity, mu):
 
     return OrbitalElements(semi_major_axis, eccentricity, inclination,
                            periapsis, apoapsis, period)
+
+
+def time_to_periapsis(vec_location, vec_velocity, mu):
+    """Sekunden bis zum nächsten Periapsisdurchgang.
+
+    Ein Bahnanhebungsmanöver wirkt fast nur im Periapsis, weil dort die
+    Geschwindigkeit am höchsten ist und ein gegebenes Delta-v die meiste
+    Energie einbringt. Um dort zünden zu können, muss man wissen, wann es so
+    weit ist -- und zwar im Voraus, nicht erst beim Durchgang.
+
+    Der Weg führt über die Kepler-Gleichung: aus dem Zustand folgt die
+    exzentrische Anomalie, daraus die mittlere Anomalie und damit die
+    verstrichene Zeit seit dem letzten Periapsis. Für eine offene Bahn, die
+    das Periapsis bereits hinter sich hat, gibt es keinen nächsten Durchgang;
+    dann kommt None zurück.
+    """
+    vec_location = np.asarray(vec_location, dtype=float)
+    vec_velocity = np.asarray(vec_velocity, dtype=float)
+
+    elements = elements_from_state(vec_location, vec_velocity, mu)
+    if elements.eccentricity >= 1.0 or math.isinf(elements.period):
+        # Offene Bahn: nur solange die radiale Geschwindigkeit negativ ist,
+        # steht der Durchgang noch bevor -- eine Vorhersage dafür liefert
+        # diese Funktion bewusst nicht.
+        return None
+
+    distance = float(np.linalg.norm(vec_location))
+    semi_major_axis = elements.semi_major_axis
+    eccentricity = elements.eccentricity
+
+    if eccentricity == 0.0:
+        # Kreisbahn: jeder Punkt ist Periapsis, es gibt keinen ausgezeichneten
+        return 0.0
+
+    cosine = (1.0 - distance / semi_major_axis) / eccentricity
+    sine = (float(np.dot(vec_location, vec_velocity))
+            / (eccentricity * math.sqrt(mu * semi_major_axis)))
+    eccentric_anomaly = math.atan2(sine, max(-1.0, min(1.0, cosine)))
+
+    mean_anomaly = eccentric_anomaly - eccentricity * math.sin(eccentric_anomaly)
+    mean_anomaly %= 2.0 * math.pi
+
+    mean_motion = math.sqrt(mu / semi_major_axis ** 3)
+    return (2.0 * math.pi - mean_anomaly) / mean_motion

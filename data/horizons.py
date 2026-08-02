@@ -36,6 +36,8 @@ BODY_IDS = {
     "Moon": "301",
     "Chandrayaan-2": "-152",
     "Chandrayaan-2 Lander": "-153",
+    "Artemis II": "-1024",
+    "Artemis I": "-1023",
 }
 
 # Schwerpunkt des Sonnensystems. Als Bezugspunkt deutlich besser geeignet als

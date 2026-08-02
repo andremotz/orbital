@@ -25,6 +25,59 @@ It was the Indian Space Agency’s Chandrayaan-2 mission that another time picke
 - a 3D view — the simulation is 3D, but every view still projects onto the ecliptic
 - collision response — impacts are currently detected and reported, but not physically resolved
 
+## Artemis II
+
+![Artemis II free-return trajectory](docs/figures/artemis2_trajectory.png)
+
+The scenario is built from the trajectory Orion *actually* flew (JPL Horizons
+`-1024`). Starting from a real state just after ICPS separation, the simulation
+reaches a **maximum distance from Earth of 418,745 km against the 413,146.2 km
+NASA published — 1.4 % off**, on a free-return trajectory nobody targeted for
+it.
+
+![Distance from Earth over the mission](docs/figures/artemis2_distance.png)
+
+Two things had to be right for that. The trans-lunar injection fires **at
+perigee** rather than by the clock, and it uses the published 355 s burn
+duration. Either one alone leaves the apogee 140,000 km short.
+
+## Where the burn profile comes from
+
+Nothing here is transcribed from a press release. Between manoeuvres a
+spacecraft coasts, so propagating from one ephemeris sample to the next with
+this project's own kernel and booking the leftover velocity change as Δv
+recovers the burns:
+
+![Burn detection](docs/figures/burn_detection.png)
+
+Against a noise floor of 0.0001 m/s, Artemis II's TLI comes out at **388.3 m/s
+where NASA published 388 m/s**, and the OTC-3 correction at **3.0 m/s against a
+published 3 m/s**. Seven further spikes were discarded as bad ephemeris
+samples — their contributions cancel instead of changing the orbit, which is
+what tells an artefact from a burn.
+
+## Why manoeuvres fire at perigee
+
+![Effect of the ignition logic](docs/figures/trigger_effect.png)
+
+A burn adds energy in proportion to the speed the craft already has, so the
+same Δv is worth far more at perigee. Fire by the clock and a slight drift
+means missing that point entirely — Chandrayaan-2's apogee then stalls at
+60,000 km (red) instead of climbing (green).
+
+## The integrator
+
+![Measured convergence order](docs/figures/convergence.png)
+
+Halving the step size divides the error by sixteen, against the exact solution
+of Kepler's equation. That is fourth order, as RK4 requires.
+
+Regenerate every figure with:
+
+```bash
+python make_figures.py
+```
+
 ## how well does it actually work?
 
 `python verification.py` compares a run against the real Chandrayaan-2

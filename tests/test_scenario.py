@@ -117,7 +117,10 @@ class TestScenarioLoading(unittest.TestCase):
 
     def test_maneuvers_are_in_chronological_order(self):
         scenario = load_named_scenario("chandrayaan2")
-        starts = [m.time_start for m in scenario.body("Chandrayaan-2").list_maneuvers]
+        # Ausgelöste Manöver haben keine feste Zeit; massgeblich ist der
+        # früheste mögliche Zündzeitpunkt.
+        starts = [m.earliest_time
+                  for m in scenario.body("Chandrayaan-2").list_maneuvers]
 
         self.assertEqual(starts, sorted(starts))
 
@@ -309,7 +312,7 @@ class TestMissionVerification(unittest.TestCase):
         """
         scenario = load_named_scenario("chandrayaan2")
         truth = load_cache("chandrayaan2_truth")["records"]
-        first_burn = min(m.time_start
+        first_burn = min(m.earliest_time
                          for m in scenario.body("Chandrayaan-2").list_maneuvers)
 
         epoch = truth[0]["jd"]
@@ -355,3 +358,43 @@ class TestMissionVerification(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestArtemisScenario(unittest.TestCase):
+    """Das Artemis-II-Szenario aus echten Horizons-Daten."""
+
+    def test_scenario_is_available(self):
+        self.assertIn("artemis2", available_scenarios())
+
+    def test_tli_matches_the_published_delta_v(self):
+        """NASA nennt 388 m/s; die Erkennung darf davon kaum abweichen."""
+        scenario = load_named_scenario("artemis2")
+        burns = [m for m in scenario.body("Artemis II").list_maneuvers
+                 if m.delta_v > 100.0]
+
+        self.assertEqual(len(burns), 1, "Genau ein grosser Burn erwartet: der TLI")
+        self.assertAlmostEqual(burns[0].delta_v, 388.0, delta=2.0)
+
+    def test_tli_fires_at_perigee_with_the_published_duration(self):
+        """Beides zusammen bringt erst die richtige Bahnhoehe."""
+        scenario = load_named_scenario("artemis2")
+        tli = [m for m in scenario.body("Artemis II").list_maneuvers
+               if m.delta_v > 100.0][0]
+
+        self.assertIsNotNone(tli.trigger)
+        self.assertEqual(tli.trigger.reference, "Earth")
+        self.assertAlmostEqual(tli.time_duration, 355.0, places=6)
+
+    def test_reaches_the_published_maximum_distance(self):
+        """Der weiteste Punkt, den Menschen je von der Erde entfernt waren."""
+        scenario = load_named_scenario("artemis2")
+        results, collision = verify_scenario(scenario)
+        self.assertIsNone(collision, "Lauf endet unerwartet in einer Kollision")
+
+        distance = [r for r in results if r.milestone.name == "Groesste Erdentfernung"]
+        self.assertEqual(len(distance), 1)
+
+        # NASA: 413.146,2 km. Ohne Zielsteuerung sind wenige Prozent zu erwarten.
+        relative = distance[0].error / distance[0].milestone.expected_distance
+        self.assertLess(relative, 0.03,
+                        f"Groesste Erdentfernung weicht um {relative:.1%} ab")

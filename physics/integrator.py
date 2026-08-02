@@ -2,7 +2,7 @@ import numpy as np
 
 from models.state import State
 from .gravity import accelerations, oblateness_accelerations
-from .mission import get_mission_acceleration
+from .mission import mission_accelerations
 
 
 def step(list_massiveObject, time_step, time=0.0):
@@ -27,11 +27,8 @@ def step(list_massiveObject, time_step, time=0.0):
 
     # Schub wird einmal für den gesamten Schritt bestimmt: Manöver sind über
     # ihre Dauer konstant, und ein Zeitschritt ist kurz gegen die Brenndauer.
-    thrust = np.array(
-        [get_mission_acceleration(obj, time, list_massiveObject)
-         for obj in list_massiveObject],
-        dtype=float,
-    )
+    # Dabei werden zugleich die Auslöser geprüft.
+    thrust = mission_accelerations(list_massiveObject, time)
 
     has_oblateness = any(
         getattr(obj, "oblateness", None) is not None for obj in list_massiveObject
