@@ -25,8 +25,9 @@ def get_mission_acceleration(massive_object, time, all_bodies=None):
         if vec_direction is None:
             continue
 
-        # Schub ist eine Kraft; die Beschleunigung folgt aus F = m*a
-        vec_acceleration += vec_direction * (maneuver.force / massive_object.mass)
+        vec_acceleration += vec_direction * maneuver.acceleration_magnitude(
+            massive_object.mass
+        )
 
     return vec_acceleration
 

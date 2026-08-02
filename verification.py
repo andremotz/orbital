@@ -13,11 +13,13 @@ Meilensteine tragen dafür einen Status:
 Aufruf:  python verification.py [szenario]
 """
 
+import math
 import sys
 
 import numpy as np
 
 from data.scenario import available_scenarios, load_named_scenario
+from physics.elements import elements_from_state
 
 
 class MilestoneResult:
@@ -190,6 +192,121 @@ def format_report(scenario, results, collision=None):
     return "\n".join(lines)
 
 
+class TrackingSample:
+    """Ein Vergleichspunkt zwischen Simulation und realer Bahn."""
+
+    def __init__(self, elapsed, date, position_error, simulated, actual):
+        self.elapsed = elapsed
+        self.date = date
+        self.position_error = position_error
+        self.simulated = simulated
+        self.actual = actual
+
+    @property
+    def apoapsis_error(self):
+        if math.isinf(self.actual.apoapsis) or math.isinf(self.simulated.apoapsis):
+            return math.inf
+        return abs(self.simulated.apoapsis - self.actual.apoapsis)
+
+    @property
+    def periapsis_error(self):
+        return abs(self.simulated.periapsis - self.actual.periapsis)
+
+
+def track_against_truth(scenario, truth_records, body_name, center_name,
+                        center_mu, time_step=None, integrator=None):
+    """Vergleicht einen Lauf mit der real geflogenen Bahn.
+
+    Die Referenz stammt aus JPL Horizons und ist relativ zu `center_name`
+    angegeben. Verglichen wird beides: der Abstand der Positionen und die
+    Bahnelemente. Letztere sind aussagekräftiger, sobald sich die Bahnen
+    zeitlich verschieben -- zwei identische Bahnen, die nur gegenphasig
+    durchlaufen werden, zeigen einen riesigen Positionsabstand bei
+    identischen Elementen.
+    """
+    time_step = time_step or scenario.time_step
+    if integrator is None:
+        from rust_integration import RustAcceleratedIntegrator
+
+        integrator = RustAcceleratedIntegrator(use_rust=True)
+
+    body = scenario.body(body_name)
+    center = scenario.body(center_name)
+    epoch_jd = truth_records[0]["jd"]
+
+    samples = []
+    simulation_time = 0.0
+    for record in truth_records:
+        target = (record["jd"] - epoch_jd) * 86400.0
+        while simulation_time < target:
+            integrator.calculate_states_batch(scenario.bodies, time_step, simulation_time)
+            simulation_time += time_step
+
+        relative_location = (body.getLatestState().vec_location
+                             - center.getLatestState().vec_location)
+        relative_velocity = (body.getLatestState().vec_velocity
+                             - center.getLatestState().vec_velocity)
+
+        actual_location = np.array(record["location"])
+        samples.append(TrackingSample(
+            elapsed=target,
+            date=record["date"][:17],
+            position_error=float(np.linalg.norm(relative_location - actual_location)),
+            simulated=elements_from_state(relative_location, relative_velocity, center_mu),
+            actual=elements_from_state(actual_location, record["velocity"], center_mu),
+        ))
+
+    return samples
+
+
+def format_tracking_report(samples, maneuver_times=()):
+    """Bericht über die Übereinstimmung mit der realen Bahn."""
+    lines = [
+        "Vergleich mit der real geflogenen Bahn (JPL Horizons)",
+        "=" * 78,
+        "",
+        f"{'Zeitpunkt':<18}{'verstrichen':>12}{'Ortsfehler':>14}"
+        f"{'Perigaeum sim/ist':>22}{'Apogaeum sim/ist':>24}",
+        "-" * 90,
+    ]
+
+    first_burn = min(maneuver_times) if maneuver_times else None
+    marked_burn = False
+
+    for sample in samples:
+        if first_burn is not None and not marked_burn and sample.elapsed >= first_burn:
+            lines.append(
+                f"{'':>18}--- ab hier wirken Manoever "
+                f"(erstes bei t={first_burn/86400:.2f} d) ---"
+            )
+            marked_burn = True
+
+        apoapsis = (f"{sample.simulated.apoapsis/1e3:>10.0f}/"
+                    f"{sample.actual.apoapsis/1e3:<10.0f}"
+                    if not math.isinf(sample.actual.apoapsis) else f"{'hyperbolisch':>21}")
+        lines.append(
+            f"{sample.date:<18}{sample.elapsed/86400:>10.2f} d"
+            f"{sample.position_error/1e3:>12.0f} km"
+            f"{sample.simulated.periapsis/1e3:>11.0f}/"
+            f"{sample.actual.periapsis/1e3:<10.0f}"
+            f"{apoapsis:>24}"
+        )
+
+    ballistic = [s for s in samples
+                 if first_burn is None or s.elapsed < first_burn]
+    if ballistic:
+        worst = max(s.position_error for s in ballistic)
+        lines += [
+            "",
+            f"Rein ballistische Phase ({len(ballistic)} Vergleichspunkte bis zum "
+            f"ersten Manoever):",
+            f"  groesster Ortsfehler {worst/1e3:.1f} km nach "
+            f"{ballistic[-1].elapsed/86400:.2f} Tagen",
+        ]
+
+    return "\n".join(lines)
+
+
 def main(argv):
     scenario_name = argv[1] if len(argv) > 1 else None
     if scenario_name is None:
@@ -203,9 +320,35 @@ def main(argv):
     results, collision = verify_scenario(scenario)
     print(format_report(scenario, results, collision))
 
+    _print_tracking_if_available(scenario_name)
+
     if collision is not None:
         return 1
     return 1 if any(result.is_failure for result in results) else 0
+
+
+def _print_tracking_if_available(scenario_name):
+    """Hängt den Vergleich mit der realen Bahn an, falls Referenzdaten da sind."""
+    from data.constants import GM_EARTH
+    from data.horizons import HorizonsError, load_cache
+
+    try:
+        truth = load_cache(f"{scenario_name}_truth")
+    except HorizonsError:
+        return
+
+    scenario = load_named_scenario(scenario_name)
+    samples = track_against_truth(
+        scenario, truth["records"], "Chandrayaan-2", "Earth", GM_EARTH
+    )
+    maneuver_times = [
+        maneuver.time_start
+        for body in scenario.bodies
+        for maneuver in body.list_maneuvers
+    ]
+
+    print()
+    print(format_tracking_report(samples[::6], maneuver_times))
 
 
 if __name__ == "__main__":

@@ -86,17 +86,22 @@ def test_rust_kernel_direct():
         import orbital_rust_kernel
         
         # Erstelle Testdaten
-        masses = np.array([1.989e30, 5.972e24], dtype=np.float64)  # Sonne, Erde
+        # Der Kernel erwartet GM, nicht die Masse -- siehe data/constants.py
+        mus = np.array([1.32712440041279419e20, 3.98600435507e14], dtype=np.float64)
         # Zustände sind dreikomponentig: [x, y, z]
         positions = np.array([[0.0, 0.0, 0.0], [1.496e11, 0.0, 0.0]], dtype=np.float64)
         velocities = np.array([[0.0, 0.0, 0.0], [0.0, 29780.0, 0.0]], dtype=np.float64)
         # Manöver-Schub in m/s^2, hier für beide Körper null
         thrust = np.zeros((2, 3), dtype=np.float64)
+        # Beide Körper als Kugel gerechnet: j2 = 0 schaltet die Abplattung ab
+        j2 = np.zeros(2, dtype=np.float64)
+        equatorial_radii = np.zeros(2, dtype=np.float64)
+        poles = np.zeros((2, 3), dtype=np.float64)
         time_step = 60.0
 
         # Führe RK4-Berechnung aus
         new_positions, new_velocities = orbital_rust_kernel.rk4_step_python(
-            masses, positions, velocities, thrust, time_step
+            mus, positions, velocities, thrust, j2, equatorial_radii, poles, time_step
         )
         
         print("✅ Rust-Kernel funktioniert!")

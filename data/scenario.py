@@ -21,6 +21,7 @@ import numpy as np
 from data.constants import DIMENSIONS
 from models.maneuver import Maneuver
 from models.massive_object import DEFAULT_HISTORY_LENGTH, MassiveObject
+from models.oblateness import Oblateness
 from models.state import State
 
 SCENARIO_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "scenarios")
@@ -122,6 +123,21 @@ def _vector(raw, context):
     return np.array(components)
 
 
+def _build_oblateness(raw, context):
+    """Liest die Abplattung eines Körpers, falls angegeben."""
+    if raw is None:
+        return None
+
+    for key in ("j2", "equatorial_radius", "pole"):
+        _require(raw, key, f"{context}.oblateness")
+
+    return Oblateness(
+        float(raw["j2"]),
+        float(raw["equatorial_radius"]),
+        _vector(raw["pole"], f"{context}.oblateness.pole"),
+    )
+
+
 def _resolve_order(raw_bodies):
     """Sortiert die Körper so, dass Bezugskörper vor ihren Bezugnehmern stehen.
 
@@ -169,11 +185,18 @@ def _build_bodies(raw_bodies, raw_maneuvers, history_length):
         context = f"Manöver #{index}"
         body_name = _require(raw, "body", context)
         direction = raw.get("direction")
+
+        if ("force" in raw) == ("delta_v" in raw):
+            raise ScenarioError(
+                f"{context}: genau eines von 'force' und 'delta_v' angeben"
+            )
+
         maneuvers_by_body.setdefault(body_name, []).append(
             Maneuver(
                 time_start=float(_require(raw, "time_start", context)),
                 time_duration=float(_require(raw, "duration", context)),
-                force=float(_require(raw, "force", context)),
+                force=float(raw["force"]) if "force" in raw else None,
+                delta_v=float(raw["delta_v"]) if "delta_v" in raw else None,
                 direction=_vector(direction, context) if direction is not None else None,
                 relative_to=raw.get("relative_to"),
             )
@@ -206,6 +229,10 @@ def _build_bodies(raw_bodies, raw_maneuvers, history_length):
             bool(raw.get("is_heavy", True)),
             maneuvers_by_body.pop(name, []),
             history_length,
+            oblateness=_build_oblateness(raw.get("oblateness"), context),
+            # GM ist genauer bekannt als Masse mal G; ohne Angabe wird es aus
+            # der Masse gebildet.
+            mu=float(raw["mu"]) if "mu" in raw else None,
         )
 
     if maneuvers_by_body:

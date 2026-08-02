@@ -122,6 +122,11 @@ Läufe (der Benchmark arbeitet auf Kopien, siehe `MassiveObject.copy()`):
 | Szenario | Python | Rust | Speedup |
 |----------|--------|------|---------|
 | 4 Objekte, 20000 Schritte, 3D | 0.641s | 0.091s | **7.0x** |
+| dieselben Objekte mit Erdabplattung J2 | 3.442s | 0.281s | **12.2x** |
+
+Die Abplattung vergrössert den Abstand: Python wertet sie über eine Schleife
+je abgeplattetem Körper mit NumPy-Zwischenarrays aus, Rust erledigt sie in
+derselben Schleife wie die Gravitation ohne Zwischenspeicher.
 
 Der Python-Pfad ist über NumPy vektorisiert, deshalb fällt der Vorsprung
 kleiner aus, als ein Vergleich gegen Schleifen-Code vermuten ließe. Bei
