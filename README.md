@@ -105,6 +105,46 @@ Simulation data lives in `data/scenarios/*.json` — all SI units, with sources
 and known limitations recorded alongside the values.
 
 ## animations
+
+Twenty seconds each, simulation (orange) against the trajectory actually flown
+(blue, JPL Horizons).
+
+### Chandrayaan-2 — orbit raising and lunar transfer
+
+![Chandrayaan-2](docs/animations/chandrayaan2.gif)
+
+The spiral of five perigee burns walking the apogee outwards is the whole
+first half of the mission. Then the real spacecraft departs for the Moon and
+the simulation does not follow — the Δv values were measured on the flown
+trajectory, and replaying them onto an orbit that has already drifted does
+something else. That gap is the open item at the top of the backlog.
+
+### Artemis II — crewed lunar flyby
+
+![Artemis II](docs/animations/artemis2.gif)
+
+Here the two stay together: out past the Moon on a free return and back, with
+the simulated maximum distance landing 1.4 % from the published figure.
+
+Regenerate, or watch before committing to a file:
+
+```bash
+python make_animations.py --preview artemis2
+```
+
+```bash
+python make_animations.py
+```
+
+Preview and export share one drawing path, so what the window shows is what
+gets written. The master is an MP4 — H.264 at full quality, a few hundred KB
+per second of video. The GIF is derived from it with a palette computed from
+the content, which is smaller and cleaner than exporting GIF directly. Both
+land in `docs/animations/`. Needs `ffmpeg` on the PATH.
+
+Older recordings, from before any of this was verified against real
+ephemerides:
+
 [![Orbital Earth around Sun](https://img.youtube.com/vi/Tnh3-dnT3iw/0.jpg)](https://www.youtube.com/watch?v=Tnh3-dnT3iw)
 
 [![Orbital Rocket around Earth](https://img.youtube.com/vi/6ElpsQva-jI/0.jpg)](https://www.youtube.com/watch?v=6ElpsQva-jI)

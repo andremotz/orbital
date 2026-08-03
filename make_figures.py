@@ -23,28 +23,19 @@ from data.horizons import load_cache
 from data.scenario import load_named_scenario
 from physics.elements import elements_from_state
 from physics.integrator import step
+from rendering.plotstyle import (
+    ACCENT,
+    BACKGROUND,
+    FOREGROUND,
+    GRID,
+    REAL,
+    SIMULATED,
+    WARN,
+    style_axes,
+)
 from rust_integration import RustAcceleratedIntegrator
 
-BACKGROUND = "#111318"
-FOREGROUND = "#e8e8ea"
-GRID = "#2a2d35"
-REAL = "#4da3ff"
-SIMULATED = "#ff9d4d"
-ACCENT = "#5ddba0"
-WARN = "#ff6b6b"
-
 KM = 1e3
-
-
-def style_axes(axes, title, xlabel, ylabel):
-    axes.set_facecolor(BACKGROUND)
-    axes.set_title(title, color=FOREGROUND, fontsize=13, pad=12)
-    axes.set_xlabel(xlabel, color=FOREGROUND, fontsize=10)
-    axes.set_ylabel(ylabel, color=FOREGROUND, fontsize=10)
-    axes.tick_params(colors=FOREGROUND, labelsize=9)
-    axes.grid(True, color=GRID, linewidth=0.6)
-    for spine in axes.spines.values():
-        spine.set_color(GRID)
 
 
 def new_figure(width=10.0, height=6.0):
