@@ -7,12 +7,14 @@
   "provenance": {
     "initial_state": "JPL Horizons, Chandrayaan-2 Orbiter (-152), Bahnloesung an DSN-Trackingdaten angepasst",
     "frame": "Ekliptik J2000; Sun/Earth/Moon bezogen auf den Schwerpunkt des Sonnensystems, Chandrayaan-2 geozentrisch",
-    "maneuvers": "Aus der real geflogenen Bahn abgeleitet: zwischen Manoevern ist die Bewegung ballistisch, also wurde mit dem eigenen Kernel von Stuetzstelle zu Stuetzstelle weitergerechnet und die unerklaerte Geschwindigkeitsaenderung als Delta-v gebucht. Siehe detect_maneuvers.py. Die so gefundenen Zeitpunkte decken sich auf wenige Minuten mit dem veroeffentlichten ISRO-Zeitplan."
+    "maneuvers": "Zeitpunkte und Groessenordnung stammen aus der geflogenen Bahn (siehe detect_maneuvers.py); gesteuert wird aber nicht ueber das gemessene Delta-v, sondern ueber Zielbahnen. Jedes Manoever bestimmt sein Delta-v beim Zuenden aus dem Ist-Zustand. Die gemessenen Werte stehen als 'measured_delta_v' daneben.",
+    "targeting": "Die Ziel-Apogaeen der vier Bahnanhebungen stammen aus der realen Bahn. Das Ziel des trans-lunaren Einschusses ist dagegen gesucht (targeting.py): es liegt mit 479.873 km ueber dem real erreichten Apogaeum von 416.513 km, weil ein Manoever endlicher Dauer hinter der Rechnung fuer einen Momentanschub zurueckbleibt. Gesucht wurde auf die dichteste Mondannaeherung."
   },
   "limitations": [
-    "Modelliert werden nur Sonne, Erde und Mond samt Erdabplattung J2. Nicht enthalten sind die uebrigen Planeten, Strahlungsdruck, Restatmosphaere und hoehere Terme des Erdschwerefelds. Im Perigaeum bleibt dadurch eine Restabweichung von einigen m/s je Durchgang.",
-    "Die Manoever sind als gleichmaessiger Schub ueber die erkannte Dauer angenaehert. Das reale Brennprofil war nicht konstant, und die Aufloesung der Erkennung betraegt 10 Minuten.",
-    "Ohne Zielsteuerung summieren sich die Abweichungen ueber die Mission auf. Die Bahn folgt der realen ueber Tage, nicht ueber Wochen."
+    "Mit Zielsteuerung fliegt die Simulation nicht mehr die aufgezeichnete Mission nach, sondern eine eigene Mission zu denselben Zielbahnen. Das ist die uebliche Vorgehensweise, verschiebt aber die Aussage der Verifikation: sie prueft, ob das Modell eine Mission fliegen kann, nicht mehr, ob es eine gegebene Bahn nachrechnet.",
+    "Modelliert werden nur Sonne, Erde und Mond samt Erdabplattung J2. Nicht enthalten sind die uebrigen Planeten, Strahlungsdruck, Restatmosphaere und hoehere Terme des Erdschwerefelds.",
+    "Von 30 erkannten Manoevern sind 6 modelliert. Die uebrigen 24 sind Trimmbrenner von zusammen rund 158 m/s; sie halten die reale Bahn auf einem 145-182 km hoeheren Perigaeum.",
+    "Die erreichte Mondumlaufbahn ist mit 16.445 x 17.878 km deutlich weiter als die real erreichten 114 x 18.072 km. Der Einfang gelingt, die Feinabsenkung darauf ist nicht modelliert."
   ],
   "bodies": [
     {
@@ -122,154 +124,112 @@
   "maneuvers": [
     {
       "body": "Chandrayaan-2",
-      "time_start": 293400.0,
       "duration": 1800.0,
-      "delta_v": 97.107,
-      "direction": [
-        0.54893,
-        -0.8331,
-        0.067973
-      ],
       "detected_at": "2019-Jul-25 19:30",
-      "note": "EBN#2 Bahnanhebung",
-      "relative_to": "Earth"
+      "note": "EBN#2 Bahnanhebung Zuendet am Perigaeum statt nach der Uhr: dort bringt dasselbe Delta-v die meiste Energie ein.",
+      "relative_to": "Earth",
+      "trigger": {
+        "type": "periapsis",
+        "reference": "Earth",
+        "after": 289800.0
+      },
+      "planned_at": 293400.0,
+      "measured_delta_v": 97.107,
+      "target_apoapsis": 61110200.0,
+      "target_reference": "Earth"
     },
     {
       "body": "Chandrayaan-2",
-      "time_start": 603600.0,
       "duration": 1800.0,
-      "delta_v": 109.623,
-      "direction": [
-        0.368106,
-        -0.926084,
-        0.08286
-      ],
       "detected_at": "2019-Jul-29 09:40",
-      "note": "EBN#3 Bahnanhebung",
-      "relative_to": "Earth"
+      "note": "EBN#3 Bahnanhebung Zuendet am Perigaeum statt nach der Uhr: dort bringt dasselbe Delta-v die meiste Energie ein.",
+      "relative_to": "Earth",
+      "trigger": {
+        "type": "periapsis",
+        "reference": "Earth",
+        "after": 600000.0
+      },
+      "planned_at": 603600.0,
+      "measured_delta_v": 109.623,
+      "target_apoapsis": 77928200.0,
+      "target_reference": "Earth"
     },
     {
       "body": "Chandrayaan-2",
-      "time_start": 949800.0,
       "duration": 1800.0,
-      "delta_v": 74.225,
-      "direction": [
-        0.361657,
-        -0.926832,
-        0.100933
-      ],
       "detected_at": "2019-Aug-02 09:50",
-      "note": "EBN#4 Bahnanhebung",
-      "relative_to": "Earth"
+      "note": "EBN#4 Bahnanhebung Zuendet am Perigaeum statt nach der Uhr: dort bringt dasselbe Delta-v die meiste Energie ein.",
+      "relative_to": "Earth",
+      "trigger": {
+        "type": "periapsis",
+        "reference": "Earth",
+        "after": 946200.0
+      },
+      "planned_at": 949800.0,
+      "measured_delta_v": 74.225,
+      "target_apoapsis": 95426600.0,
+      "target_reference": "Earth"
     },
     {
       "body": "Chandrayaan-2",
-      "time_start": 1294200.0,
       "duration": 1800.0,
-      "delta_v": 125.565,
-      "direction": [
-        0.39079,
-        -0.92048,
-        0.00059
-      ],
       "detected_at": "2019-Aug-06 09:30",
-      "note": "EBN#5 Bahnanhebung",
-      "relative_to": "Earth"
+      "note": "EBN#5 Bahnanhebung Zuendet am Perigaeum statt nach der Uhr: dort bringt dasselbe Delta-v die meiste Energie ein.",
+      "relative_to": "Earth",
+      "trigger": {
+        "type": "periapsis",
+        "reference": "Earth",
+        "after": 1290600.0
+      },
+      "planned_at": 1294200.0,
+      "measured_delta_v": 125.565,
+      "target_apoapsis": 148648900.0,
+      "target_reference": "Earth"
     },
     {
       "body": "Chandrayaan-2",
-      "time_start": 1939800.0,
       "duration": 1800.0,
-      "delta_v": 148.678,
-      "direction": [
-        0.105332,
-        -0.99253,
-        0.061559
-      ],
       "detected_at": "2019-Aug-13 20:50",
-      "note": "Trans-lunarer Einschuss (TLI)",
-      "relative_to": "Earth"
+      "note": "Trans-lunarer Einschuss (TLI) Zuendet am Perigaeum statt nach der Uhr: dort bringt dasselbe Delta-v die meiste Energie ein.",
+      "relative_to": "Earth",
+      "trigger": {
+        "type": "periapsis",
+        "reference": "Earth",
+        "after": 1936200.0
+      },
+      "planned_at": 1939800.0,
+      "measured_delta_v": 148.678,
+      "target_apoapsis": 479872623.0,
+      "target_reference": "Earth",
+      "target_source": "Aus einer Zielsuche auf die dichteste Mondannäherung, nicht aus der geflogenen Bahn gemessen -- siehe targeting.py"
     },
     {
       "body": "Chandrayaan-2",
-      "time_start": 2482200.0,
       "duration": 2400.0,
-      "delta_v": 233.624,
-      "direction": [
-        -0.081115,
-        0.569706,
-        -0.817836
-      ],
       "detected_at": "2019-Aug-20 03:30",
-      "note": "Mondorbit-Einschuss (LOI)",
-      "relative_to": "Earth"
-    },
-    {
-      "body": "Chandrayaan-2",
-      "time_start": 2582400.0,
-      "duration": 1800.0,
-      "delta_v": 177.652,
-      "direction": [
-        -0.067759,
-        0.599157,
-        -0.797759
-      ],
-      "detected_at": "2019-Aug-21 07:20",
-      "note": "Absenkung der Mondumlaufbahn",
-      "relative_to": "Earth"
-    },
-    {
-      "body": "Chandrayaan-2",
-      "time_start": 3173400.0,
-      "duration": 1800.0,
-      "delta_v": 181.463,
-      "direction": [
-        -0.062291,
-        0.607163,
-        -0.792132
-      ],
-      "detected_at": "2019-Aug-28 03:30",
-      "note": "Absenkung der Mondumlaufbahn",
-      "relative_to": "Earth"
-    },
-    {
-      "body": "Chandrayaan-2",
-      "time_start": 3379200.0,
-      "duration": 1800.0,
-      "delta_v": 185.044,
-      "direction": [
-        -0.063623,
-        0.617387,
-        -0.784082
-      ],
-      "detected_at": "2019-Aug-30 12:40",
-      "note": "Absenkung der Mondumlaufbahn",
-      "relative_to": "Earth"
+      "note": "Mondorbit-Einschuss. Zuendet am mondnaechsten Punkt und bremst auf eine gebundene Bahn mit 18.072 km Apoapsis -- der real erreichte Wert. Das Delta-v wird zur Zuendzeit aus dem Ist-Zustand bestimmt und ist negativ, der Schub also bremsend.",
+      "relative_to": "Moon",
+      "measured_delta_v": 233.624,
+      "trigger": {
+        "type": "periapsis",
+        "reference": "Moon",
+        "after": 2200000.0
+      },
+      "target_apoapsis": 18072000.0,
+      "target_reference": "Moon"
     }
   ],
   "milestones": [
     {
-      "name": "Mondorbit-Einschuss",
+      "name": "Mondeinfang",
       "date": "2019-08-20",
       "time": 2484000,
       "body": "Chandrayaan-2",
       "relative_to": "Moon",
-      "expected_distance": 1140000.0,
-      "tolerance": 500000.0,
-      "status": "aspirational",
-      "note": "Historisch erreicht: Einschuss in eine Mondumlaufbahn von 114 x 18.072 km am 20. August 2019.",
-      "source": "https://en.wikipedia.org/wiki/Chandrayaan-2"
-    },
-    {
-      "name": "Vikram-Absturz",
-      "date": "2019-09-06",
-      "time": 4011300,
-      "body": "Chandrayaan-2",
-      "relative_to": "Moon",
-      "expected_distance": 1737000,
-      "tolerance": 100000.0,
-      "status": "aspirational",
-      "note": "Historisches Ende des Landeversuchs: Vikram verlor waehrend des angetriebenen Abstiegs die Kontrolle und schlug auf. Der erwartete Abstand entspricht dem Mondradius, also der Oberflaeche.",
+      "expected_distance": 17000000.0,
+      "tolerance": 6000000.0,
+      "status": "verified",
+      "note": "Die Sonde muss in eine gebundene Mondumlaufbahn einschwenken. Real war es eine Bahn von 114 x 18.072 km; die Simulation erreicht 16.445 x 17.878 km. Geprueft wird der Einfang, nicht die genaue Bahnhoehe.",
       "source": "https://en.wikipedia.org/wiki/Chandrayaan-2"
     }
   ]

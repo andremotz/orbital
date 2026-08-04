@@ -22,6 +22,7 @@ from data.constants import DIMENSIONS
 from models.maneuver import Maneuver
 from models.massive_object import DEFAULT_HISTORY_LENGTH, MassiveObject
 from models.oblateness import Oblateness
+from models.trigger import PeriapsisTrigger, trigger_from_config
 from models.state import State
 
 SCENARIO_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "scenarios")
@@ -186,19 +187,37 @@ def _build_bodies(raw_bodies, raw_maneuvers, history_length):
         body_name = _require(raw, "body", context)
         direction = raw.get("direction")
 
-        if ("force" in raw) == ("delta_v" in raw):
+        strength = [key for key in ("force", "delta_v", "target_apoapsis")
+                    if key in raw]
+        if len(strength) != 1:
             raise ScenarioError(
-                f"{context}: genau eines von 'force' und 'delta_v' angeben"
+                f"{context}: genau eines von 'force', 'delta_v' und "
+                f"'target_apoapsis' angeben, gefunden: "
+                f"{', '.join(strength) or 'keines'}"
             )
+        if ("time_start" in raw) == ("trigger" in raw):
+            raise ScenarioError(
+                f"{context}: genau eines von 'time_start' und 'trigger' angeben"
+            )
+
+        try:
+            trigger = (trigger_from_config(raw["trigger"], context)
+                       if "trigger" in raw else None)
+        except ValueError as error:
+            raise ScenarioError(str(error)) from error
 
         maneuvers_by_body.setdefault(body_name, []).append(
             Maneuver(
-                time_start=float(_require(raw, "time_start", context)),
+                time_start=(float(raw["time_start"]) if "time_start" in raw else None),
                 time_duration=float(_require(raw, "duration", context)),
                 force=float(raw["force"]) if "force" in raw else None,
                 delta_v=float(raw["delta_v"]) if "delta_v" in raw else None,
+                target_apoapsis=(float(raw["target_apoapsis"])
+                                 if "target_apoapsis" in raw else None),
+                target_reference=raw.get("target_reference"),
                 direction=_vector(direction, context) if direction is not None else None,
                 relative_to=raw.get("relative_to"),
+                trigger=trigger,
             )
         )
 
@@ -246,6 +265,25 @@ def _build_bodies(raw_bodies, raw_maneuvers, history_length):
                     f"Manöver von {body.name!r}: 'relative_to' verweist auf "
                     f"unbekannten Körper {maneuver.relative_to!r}"
                 )
+            trigger = maneuver.trigger
+            if isinstance(trigger, PeriapsisTrigger) and trigger.reference not in built:
+                raise ScenarioError(
+                    f"Manöver von {body.name!r}: Auslöser verweist auf "
+                    f"unbekannten Körper {trigger.reference!r}"
+                )
+            if maneuver.target_apoapsis is not None:
+                if maneuver.target_reference is None:
+                    raise ScenarioError(
+                        f"Manöver von {body.name!r}: 'target_apoapsis' braucht "
+                        f"einen Bezugskörper über 'target_reference' oder "
+                        f"'relative_to'"
+                    )
+                if maneuver.target_reference not in built:
+                    raise ScenarioError(
+                        f"Manöver von {body.name!r}: 'target_reference' "
+                        f"verweist auf unbekannten Körper "
+                        f"{maneuver.target_reference!r}"
+                    )
 
     # Reihenfolge der JSON-Datei beibehalten, nicht die Auflösungsreihenfolge
     return [built[raw["name"]] for raw in raw_bodies]

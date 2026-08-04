@@ -59,7 +59,7 @@ class TestScenarioLoading(unittest.TestCase):
             [body.name for body in scenario.bodies],
             ["Sun", "Earth", "Moon", "Chandrayaan-2"],
         )
-        self.assertEqual(len(scenario.milestones), 2)
+        self.assertEqual(len(scenario.milestones), 1)
         self.assertTrue(scenario.limitations, "Grenzen des Modells fehlen")
 
     def test_relative_positions_are_added_to_the_parent(self):
@@ -101,23 +101,41 @@ class TestScenarioLoading(unittest.TestCase):
         self.assertIsNone(scenario.body("Moon").oblateness)
 
     def test_burn_profile_is_loaded(self):
-        """Das aus der realen Bahn gewonnene Brennprofil muss ankommen."""
+        """Die Manöver sind zielgesteuert, nicht als Delta-v abgespielt.
+
+        Ein gemessenes Delta-v tut auf einer abgewichenen Bahn etwas anderes
+        als dort, wo es gemessen wurde. Die fünf erdnahen Anhebungen, der
+        trans-lunare Einschuss und der Mondorbit-Einschuss fliegen deshalb
+        jeweils ein Ziel an.
+        """
         scenario = load_named_scenario("chandrayaan2")
 
         probe = scenario.body("Chandrayaan-2")
-        self.assertEqual(len(probe.list_maneuvers), 9)
+        self.assertEqual(len(probe.list_maneuvers), 6)
         self.assertEqual(scenario.body("Earth").list_maneuvers, [])
 
         for maneuver in probe.list_maneuvers:
             with self.subTest(maneuver=maneuver):
-                self.assertEqual(maneuver.relative_to, "Earth")
-                self.assertIsNotNone(maneuver.delta_v)
+                self.assertIsNotNone(maneuver.target_apoapsis)
+                self.assertIsNone(maneuver.delta_v)
                 self.assertIsNone(maneuver.force)
-                self.assertGreater(maneuver.delta_v, 50.0)
+                self.assertIsNotNone(maneuver.target_reference)
+
+    def test_lunar_insertion_is_referenced_to_the_moon(self):
+        """Der Einfang muss mondrelativ gerechnet und ausgelöst werden."""
+        scenario = load_named_scenario("chandrayaan2")
+        insertion = scenario.body("Chandrayaan-2").list_maneuvers[-1]
+
+        self.assertEqual(insertion.target_reference, "Moon")
+        self.assertEqual(insertion.relative_to, "Moon")
+        self.assertEqual(insertion.trigger.reference, "Moon")
 
     def test_maneuvers_are_in_chronological_order(self):
         scenario = load_named_scenario("chandrayaan2")
-        starts = [m.time_start for m in scenario.body("Chandrayaan-2").list_maneuvers]
+        # Ausgelöste Manöver haben keine feste Zeit; massgeblich ist der
+        # früheste mögliche Zündzeitpunkt.
+        starts = [m.earliest_time
+                  for m in scenario.body("Chandrayaan-2").list_maneuvers]
 
         self.assertEqual(starts, sorted(starts))
 
@@ -287,16 +305,25 @@ class TestCollisionDetection(unittest.TestCase):
 class TestMissionVerification(unittest.TestCase):
     """Die Auswertung von Meilensteinen (Schicht 2)."""
 
-    def test_aspirational_milestone_is_not_a_failure(self):
-        """Ein historisches Ziel darf den Lauf nicht scheitern lassen."""
-        scenario = load_named_scenario("chandrayaan2")
-        results, _ = verify_scenario(scenario)
+    def test_lunar_capture_is_a_verified_milestone(self):
+        """Der Einfang ist kein blosses Ziel mehr, sondern wird eingehalten.
 
-        self.assertEqual(len(results), 2)
-        for result in results:
-            with self.subTest(milestone=result.milestone.name):
-                self.assertEqual(result.milestone.status, "aspirational")
-                self.assertFalse(result.is_failure)
+        Seit die Manoever ihre Zielbahn anfliegen statt ein gemessenes Delta-v
+        abzuspielen, erreicht die Sonde den Mond und wird gebunden. Das ist der
+        erste Meilenstein des Projekts mit Status 'verified' -- er darf den
+        Lauf scheitern lassen, wenn er verfehlt wird.
+        """
+        scenario = load_named_scenario("chandrayaan2")
+        results, collision = verify_scenario(scenario)
+
+        self.assertIsNone(collision, "Lauf endet unerwartet in einer Kollision")
+        self.assertEqual(len(results), 1)
+
+        capture = results[0]
+        self.assertEqual(capture.milestone.status, "verified")
+        self.assertTrue(capture.within_tolerance,
+                        f"Einfang verfehlt: {capture.actual_distance/1e3:.0f} km")
+        self.assertFalse(capture.is_failure)
 
     def test_ballistic_phase_tracks_the_real_trajectory(self):
         """Vor dem ersten Manöver muss die Bahn der realen eng folgen.
@@ -309,7 +336,7 @@ class TestMissionVerification(unittest.TestCase):
         """
         scenario = load_named_scenario("chandrayaan2")
         truth = load_cache("chandrayaan2_truth")["records"]
-        first_burn = min(m.time_start
+        first_burn = min(m.earliest_time
                          for m in scenario.body("Chandrayaan-2").list_maneuvers)
 
         epoch = truth[0]["jd"]
@@ -333,8 +360,10 @@ class TestMissionVerification(unittest.TestCase):
         report = format_report(scenario, results, collision)
 
         self.assertIn("Bekannte Grenzen", report)
-        self.assertIn("Vikram-Absturz", report)
-        self.assertIn("historisches Ziel", report)
+        self.assertIn("Mondeinfang", report)
+        # Die Verschiebung der Aussage durch die Zielsteuerung muss im
+        # Bericht stehen und nicht nur im Kommentar
+        self.assertIn("Zielsteuerung", report)
 
     def test_moon_orbit_is_inclined(self):
         """Die Mondbahn ragt aus der Ekliptik heraus.
@@ -355,3 +384,43 @@ class TestMissionVerification(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestArtemisScenario(unittest.TestCase):
+    """Das Artemis-II-Szenario aus echten Horizons-Daten."""
+
+    def test_scenario_is_available(self):
+        self.assertIn("artemis2", available_scenarios())
+
+    def test_tli_matches_the_published_delta_v(self):
+        """NASA nennt 388 m/s; die Erkennung darf davon kaum abweichen."""
+        scenario = load_named_scenario("artemis2")
+        burns = [m for m in scenario.body("Artemis II").list_maneuvers
+                 if m.delta_v > 100.0]
+
+        self.assertEqual(len(burns), 1, "Genau ein grosser Burn erwartet: der TLI")
+        self.assertAlmostEqual(burns[0].delta_v, 388.0, delta=2.0)
+
+    def test_tli_fires_at_perigee_with_the_published_duration(self):
+        """Beides zusammen bringt erst die richtige Bahnhoehe."""
+        scenario = load_named_scenario("artemis2")
+        tli = [m for m in scenario.body("Artemis II").list_maneuvers
+               if m.delta_v > 100.0][0]
+
+        self.assertIsNotNone(tli.trigger)
+        self.assertEqual(tli.trigger.reference, "Earth")
+        self.assertAlmostEqual(tli.time_duration, 355.0, places=6)
+
+    def test_reaches_the_published_maximum_distance(self):
+        """Der weiteste Punkt, den Menschen je von der Erde entfernt waren."""
+        scenario = load_named_scenario("artemis2")
+        results, collision = verify_scenario(scenario)
+        self.assertIsNone(collision, "Lauf endet unerwartet in einer Kollision")
+
+        distance = [r for r in results if r.milestone.name == "Groesste Erdentfernung"]
+        self.assertEqual(len(distance), 1)
+
+        # NASA: 413.146,2 km. Ohne Zielsteuerung sind wenige Prozent zu erwarten.
+        relative = distance[0].error / distance[0].milestone.expected_distance
+        self.assertLess(relative, 0.03,
+                        f"Groesste Erdentfernung weicht um {relative:.1%} ab")

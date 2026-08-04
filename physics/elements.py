@@ -83,3 +83,86 @@ def elements_from_state(vec_location, vec_velocity, mu):
 
     return OrbitalElements(semi_major_axis, eccentricity, inclination,
                            periapsis, apoapsis, period)
+
+
+def time_to_periapsis(vec_location, vec_velocity, mu):
+    """Sekunden bis zum nächsten Periapsisdurchgang.
+
+    Ein Bahnanhebungsmanöver wirkt fast nur im Periapsis, weil dort die
+    Geschwindigkeit am höchsten ist und ein gegebenes Delta-v die meiste
+    Energie einbringt. Um dort zünden zu können, muss man wissen, wann es so
+    weit ist -- und zwar im Voraus, nicht erst beim Durchgang.
+
+    Der Weg führt über die Kepler-Gleichung: aus dem Zustand folgt die
+    exzentrische Anomalie, daraus die mittlere Anomalie und damit die
+    verstrichene Zeit seit dem letzten Periapsis.
+
+    Offene Bahnen sind mit erfasst, und das ist kein Beiwerk: eine Sonde, die
+    auf einen Mond zufliegt, ist relativ zu ihm hyperbolisch: sie ist ja noch
+    nicht eingefangen. Der Bremsschub, der sie einfängt, muss genau im
+    Perizentrum dieser Hyperbel liegen. Ohne Vorhersage dafür liesse sich ein
+    Einfang gar nicht auslösen. Bei einer offenen Bahn, deren Perizentrum
+    schon hinter ihr liegt, kommt None zurück -- dort gibt es keinen nächsten
+    Durchgang mehr.
+    """
+    vec_location = np.asarray(vec_location, dtype=float)
+    vec_velocity = np.asarray(vec_velocity, dtype=float)
+
+    elements = elements_from_state(vec_location, vec_velocity, mu)
+
+    if elements.eccentricity >= 1.0:
+        return _time_to_periapsis_open(vec_location, vec_velocity, mu, elements)
+
+    distance = float(np.linalg.norm(vec_location))
+    semi_major_axis = elements.semi_major_axis
+    eccentricity = elements.eccentricity
+
+    if eccentricity == 0.0:
+        # Kreisbahn: jeder Punkt ist Periapsis, es gibt keinen ausgezeichneten
+        return 0.0
+
+    cosine = (1.0 - distance / semi_major_axis) / eccentricity
+    sine = (float(np.dot(vec_location, vec_velocity))
+            / (eccentricity * math.sqrt(mu * semi_major_axis)))
+    eccentric_anomaly = math.atan2(sine, max(-1.0, min(1.0, cosine)))
+
+    mean_anomaly = eccentric_anomaly - eccentricity * math.sin(eccentric_anomaly)
+    mean_anomaly %= 2.0 * math.pi
+
+    mean_motion = math.sqrt(mu / semi_major_axis ** 3)
+    return (2.0 * math.pi - mean_anomaly) / mean_motion
+
+
+def _time_to_periapsis_open(vec_location, vec_velocity, mu, elements):
+    """Zeit bis zum Perizentrum auf einer hyperbolischen Bahn.
+
+    Dieselbe Rechnung wie im geschlossenen Fall, nur mit hyperbolischen
+    Funktionen: statt der exzentrischen Anomalie tritt die hyperbolische
+    Anomalie H, statt der Kepler-Gleichung ihre Entsprechung
+    M = e*sinh(H) - H.
+
+    Eine Hyperbel wird nur einmal durchflogen. Liegt das Perizentrum bereits
+    hinter dem Fahrzeug -- erkennbar an einer nach aussen gerichteten radialen
+    Geschwindigkeit -- kommt None zurück.
+    """
+    distance = float(np.linalg.norm(vec_location))
+    radial_speed = float(np.dot(vec_location, vec_velocity)) / distance
+    if radial_speed >= 0.0:
+        # Entfernt sich bereits; das Perizentrum ist passiert
+        return None
+
+    eccentricity = elements.eccentricity
+    semi_major_axis = abs(elements.semi_major_axis)
+    if eccentricity <= 1.0 or semi_major_axis == 0.0:
+        return None
+
+    cosh_anomaly = (distance / semi_major_axis + 1.0) / eccentricity
+    if cosh_anomaly < 1.0:
+        # Numerisch knapp am Perizentrum
+        return 0.0
+
+    hyperbolic_anomaly = math.acosh(cosh_anomaly)
+    mean_anomaly = eccentricity * math.sinh(hyperbolic_anomaly) - hyperbolic_anomaly
+
+    mean_motion = math.sqrt(mu / semi_major_axis ** 3)
+    return mean_anomaly / mean_motion

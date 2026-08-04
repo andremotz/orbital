@@ -20,10 +20,92 @@ It was the Indian Space Agency’s Chandrayaan-2 mission that another time picke
 - Visualise several interesting cases, eg. Chandrayaan-2, Apollo 13, Voyager 1/2, …
 
 ## backlog/nice to have
-- **targeting** — the biggest remaining gap. Burns fire at fixed absolute times, so once the trajectory drifts even slightly they hit the wrong orbital phase and the orbit raising stops working. Real missions re-target continuously. Firing burns at perigee rather than by the clock would already help a lot.
+- Artemis II still replays measured Δv; giving it the same targeting treatment should close its remaining 1.4 %
+- the captured lunar orbit is 16,445 × 17,878 km against the 114 × 18,072 km actually achieved — the capture works, the descent to a low orbit is not modelled
 - more perturbations: the other planets, solar radiation pressure, higher terms of Earth's gravity field. A few m/s per perigee pass are still unaccounted for.
 - a 3D view — the simulation is 3D, but every view still projects onto the ecliptic
 - collision response — impacts are currently detected and reported, but not physically resolved
+
+## Artemis II
+
+![Artemis II free-return trajectory](docs/figures/artemis2_trajectory.png)
+
+The scenario is built from the trajectory Orion *actually* flew (JPL Horizons
+`-1024`). Starting from a real state just after ICPS separation, the simulation
+reaches a **maximum distance from Earth of 418,745 km against the 413,146.2 km
+NASA published — 1.4 % off**, on a free-return trajectory nobody targeted for
+it.
+
+![Distance from Earth over the mission](docs/figures/artemis2_distance.png)
+
+Two things had to be right for that. The trans-lunar injection fires **at
+perigee** rather than by the clock, and it uses the published 355 s burn
+duration. Either one alone leaves the apogee 140,000 km short.
+
+## Where the burn profile comes from
+
+Nothing here is transcribed from a press release. Between manoeuvres a
+spacecraft coasts, so propagating from one ephemeris sample to the next with
+this project's own kernel and booking the leftover velocity change as Δv
+recovers the burns:
+
+![Burn detection](docs/figures/burn_detection.png)
+
+Against a noise floor of 0.0001 m/s, Artemis II's TLI comes out at **388.3 m/s
+where NASA published 388 m/s**, and the OTC-3 correction at **3.0 m/s against a
+published 3 m/s**. Seven further spikes were discarded as bad ephemeris
+samples — their contributions cancel instead of changing the orbit, which is
+what tells an artefact from a burn.
+
+## Why a measured Δv is not enough
+
+![Targeting against replay](docs/figures/trigger_effect.png)
+
+Replaying the Δv that was measured on the flown trajectory leaves the apogee
+stalled at 95,000 km (red). Letting each burn name a target apoapsis and solve
+for its own Δv at ignition tracks the real climb all the way through the
+trans-lunar injection (green against blue).
+
+Two effects compound in the red curve. A burn adds energy in proportion to the
+speed the craft already has, so a Δv that misses perigee is worth much less;
+and a burn that falls short shortens the period, which walks the next perigee
+pass out of its window.
+
+## The integrator
+
+![Measured convergence order](docs/figures/convergence.png)
+
+Halving the step size divides the error by sixteen, against the exact solution
+of Kepler's equation. That is fourth order, as RK4 requires.
+
+Regenerate every figure with:
+
+```bash
+python make_figures.py
+```
+
+## Closing the loop
+
+`python targeting.py chandrayaan2` searches for the trans-lunar injection
+target that brings the probe closest to the Moon. It has to be searched rather
+than copied: a burn of finite duration falls short of the impulsive
+calculation, so the target that works (479,873 km) sits above the apogee the
+mission actually reached (416,513 km).
+
+| | before targeting | after |
+|---|---|---|
+| closest approach to the Moon | 189,063 km | **16,266 km** |
+| Moon's Hill radius | 61,524 km | — |
+| captured into lunar orbit | no | **yes**, 16,445 × 17,878 km |
+
+That milestone is the first in this project marked `verified` rather than
+`aspirational` — it is checked on every run and fails the build if missed.
+
+One honest caveat, recorded in the scenario's limitations: with targeting the
+simulation no longer replays the recorded mission, it flies its own mission to
+the same target orbits. That is the normal way to do it, but it changes what
+the verification says — from *can it reproduce a given trajectory* to *can it
+fly a mission*.
 
 ## how well does it actually work?
 
@@ -32,12 +114,14 @@ trajectory from JPL Horizons. Starting from real initial states, the purely
 ballistic phase tracks reality to **545 km after three days** — on a trajectory
 that swings between 6,550 and 51,500 km altitude.
 
-After the first burn it diverges, and honestly so: the manoeuvres replay at
-fixed absolute times without any targeting, so a small phase drift means the
-burn no longer happens at perigee where it would raise the apogee. The real
-apogee climbs to 148,000 km; the simulated one stays near 61,000 km. That gap
-is a guidance problem, not a physics one — which is exactly what the layered
-verification is there to tell apart.
+That number is the model's own accuracy, uncontaminated by guidance: no engine
+has fired yet, so the only thing being measured is the physics.
+
+After the burns start, the run no longer tracks the recorded trajectory point
+for point — it flies its own to the same target orbits, and arrives. Telling
+those two questions apart is exactly what the layered verification is for. The
+older behaviour, where a replayed Δv left the apogee stalled at 61,000 km
+against a real 148,000 km, is what motivated the targeting above.
 
 ## running it
 
@@ -52,6 +136,52 @@ Simulation data lives in `data/scenarios/*.json` — all SI units, with sources
 and known limitations recorded alongside the values.
 
 ## animations
+
+Twenty seconds each, simulation (orange) against the trajectory actually flown
+(blue, JPL Horizons).
+
+### Chandrayaan-2 — orbit raising and lunar transfer
+
+![Chandrayaan-2](docs/animations/chandrayaan2.gif)
+
+The spiral of five perigee burns walking the apogee outwards is the whole
+first half of the mission — and the probe now follows it to the Moon and is
+captured into lunar orbit.
+
+That took closed-loop targeting. Replaying a measured Δv onto an orbit that has
+already drifted does something else than it did where it was measured, and the
+error compounds: the first burn fell 15 % short, which shortened the period,
+which walked the perigee passes forward until a later burn missed its perigee
+entirely and fired 13.6 hours late. Each manoeuvre now names a **target
+apoapsis** instead and solves for its own Δv at ignition, from the state it
+actually finds.
+
+### Artemis II — crewed lunar flyby
+
+![Artemis II](docs/animations/artemis2.gif)
+
+Here the two stay together: out past the Moon on a free return and back, with
+the simulated maximum distance landing 1.4 % from the published figure.
+
+Regenerate, or watch before committing to a file:
+
+```bash
+python make_animations.py --preview artemis2
+```
+
+```bash
+python make_animations.py
+```
+
+Preview and export share one drawing path, so what the window shows is what
+gets written. The master is an MP4 — H.264 at full quality, a few hundred KB
+per second of video. The GIF is derived from it with a palette computed from
+the content, which is smaller and cleaner than exporting GIF directly. Both
+land in `docs/animations/`. Needs `ffmpeg` on the PATH.
+
+Older recordings, from before any of this was verified against real
+ephemerides:
+
 [![Orbital Earth around Sun](https://img.youtube.com/vi/Tnh3-dnT3iw/0.jpg)](https://www.youtube.com/watch?v=Tnh3-dnT3iw)
 
 [![Orbital Rocket around Earth](https://img.youtube.com/vi/6ElpsQva-jI/0.jpg)](https://www.youtube.com/watch?v=6ElpsQva-jI)

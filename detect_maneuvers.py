@@ -42,7 +42,7 @@ SYSTEM_BODIES = [
 # Nur die Erde wird abgeplattet gerechnet: im erdnahen Teil der Mission ist
 # ihre Abplattung die stärkste Störung überhaupt.
 OBLATE_BODIES = {"Earth": Oblateness.earth}
-PROBE_MASS = 3850.0
+DEFAULT_PROBE_MASS = 3850.0
 PROBE_RADIUS = 10.0
 
 LAUNCH = "2019-07-22 09:35"
@@ -78,7 +78,8 @@ def fetch_system(probe, start_time, stop_time, step_size):
     return series
 
 
-def build_system(series, probe, index, use_oblateness=True):
+def build_system(series, probe, index, use_oblateness=True,
+                 probe_mass=DEFAULT_PROBE_MASS):
     """Baut die Körper aus den realen Zuständen an Stützstelle `index`."""
     bodies = []
     for name, mu, radius in SYSTEM_BODIES:
@@ -96,7 +97,7 @@ def build_system(series, probe, index, use_oblateness=True):
     bodies.append(MassiveObject(
         State(np.array(record["velocity"]) + np.array(earth["velocity"]),
               np.array(record["location"]) + np.array(earth["location"])),
-        PROBE_MASS, PROBE_RADIUS, (255, 128, 0), probe, False, [],
+        probe_mass, PROBE_RADIUS, (255, 128, 0), probe, False, [],
     ))
     return bodies
 
@@ -155,16 +156,36 @@ def detect(series, probe, threshold, time_step=60.0):
     return residuals
 
 
-def summarise(residuals, threshold):
-    """Fasst zusammenhängende Intervalle über der Schwelle zu Manövern zusammen."""
+def summarise(residuals, threshold, coherence=0.5):
+    """Fasst zusammenhängende Intervalle über der Schwelle zu Manövern zusammen.
+
+    Nicht jeder Ausschlag ist ein Manöver. Ein einzelner fehlerhafter
+    Stützpunkt in der Ephemeride erzeugt zwei aufeinanderfolgende
+    Abweichungen, die sich gegenseitig aufheben: erst scheint das Fahrzeug
+    beschleunigt, im nächsten Intervall wieder abgebremst. Die Bahn läuft
+    dabei glatt weiter. Ein echtes Manöver dagegen ändert die Geschwindigkeit
+    bleibend, seine Beiträge zeigen also in dieselbe Richtung.
+
+    `coherence` ist das geforderte Verhältnis zwischen dem Betrag der
+    Vektorsumme und der Summe der Beträge. Bei einem Ausreisserpaar liegt es
+    nahe null, bei einem gerichteten Burn nahe eins.
+    """
     maneuvers = []
     current = None
 
+    def close(entry):
+        if entry is None:
+            return
+        vector_magnitude = float(np.linalg.norm(entry["delta_v_vector"]))
+        entry["coherence"] = (vector_magnitude / entry["delta_v"]
+                              if entry["delta_v"] > 0 else 0.0)
+        entry["delta_v"] = vector_magnitude
+        maneuvers.append(entry)
+
     for entry in residuals:
         if entry["delta_v"] < threshold:
-            if current is not None:
-                maneuvers.append(current)
-                current = None
+            close(current)
+            current = None
             continue
 
         if current is None:
@@ -180,10 +201,16 @@ def summarise(residuals, threshold):
             ).tolist()
             current["intervals"] += 1
 
-    if current is not None:
-        maneuvers.append(current)
+    close(current)
 
-    return maneuvers
+    kept = [m for m in maneuvers if m["coherence"] >= coherence]
+    discarded = [m for m in maneuvers if m["coherence"] < coherence]
+    for entry in discarded:
+        print(f"  verworfen: {entry['start'][:17]} -- Beitraege heben sich auf "
+              f"(Kohaerenz {entry['coherence']:.2f}), vermutlich fehlerhafter "
+              f"Stuetzpunkt")
+
+    return kept
 
 
 def main(argv=None):
@@ -197,6 +224,8 @@ def main(argv=None):
                         help="Delta-v-Schwelle in m/s, ab der ein Burn gilt")
     parser.add_argument("--time-step", type=float, default=60.0,
                         help="Integrationsschrittweite in Sekunden")
+    parser.add_argument("--mass", type=float, default=DEFAULT_PROBE_MASS,
+                        help="Masse des Raumfahrzeugs in kg")
     parser.add_argument("--cache", default="chandrayaan2_maneuvers")
     args = parser.parse_args(argv)
 

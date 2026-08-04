@@ -15,7 +15,7 @@ import numpy as np
 from data.constants import DIMENSIONS
 from models.state import State
 from physics.integrator import step as python_step
-from physics.mission import get_mission_acceleration
+from physics.mission import mission_accelerations
 
 try:
     import orbital_rust_kernel
@@ -42,10 +42,8 @@ def gather_arrays(massive_objects: List, time: float):
     velocities = np.array(
         [obj.getLatestState().vec_velocity for obj in massive_objects], dtype=np.float64
     )
-    thrust = np.array(
-        [get_mission_acceleration(obj, time, massive_objects) for obj in massive_objects],
-        dtype=np.float64,
-    )
+    # Prüft zugleich die Auslöser, damit der Rust-Pfad dieselbe Zündlogik hat
+    thrust = mission_accelerations(massive_objects, time).astype(np.float64)
 
     count = len(massive_objects)
     j2 = np.zeros(count, dtype=np.float64)
