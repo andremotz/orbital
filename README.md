@@ -19,6 +19,30 @@ It was the Indian Space Agency’s Chandrayaan-2 mission that another time picke
 - Implement simple UI “Cockpit” for zoom & focus-control, visualise interesting data like individual distances, polar-coordinates
 - Visualise several interesting cases, eg. Chandrayaan-2, Apollo 13, Voyager 1/2, …
 
+## how far does the model carry, out there?
+
+`data/scenarios/cassini_cruise.json` replays Cassini's seven-year flight to
+Saturn ballistically from a real starting state, with Venus, Mars, Jupiter and
+Saturn added as bodies. It answers one question: how long does a gravity-only
+model track an interplanetary trajectory?
+
+| | measured |
+|---|---|
+| 190 days, no manoeuvre, no flyby | **87,600 km error on a 107 million km orbit — 0.08 %** |
+| the Venus flyby, ten days later | **4.06 million km — a factor of 46** |
+
+That second row is why a flyby chain cannot be targeted with the machinery
+that got Chandrayaan-2 to the Moon. A model error that looks harmless before
+the encounter decides millions of kilometres after it. Cassini's trajectory is
+four such encounters in series.
+
+Adaptive step size (`physics/adaptive.py`) makes runs like this affordable:
+the step follows the local orbital period, so it is seconds near a planet and
+hours in cruise. On this trajectory that is 16,509 steps instead of 58,560,
+agreeing to a few kilometres in 1.4 billion. On a lunar mission it saves
+nothing — there the perigee passes set the pace anyway, which is the honest
+result and is what the tests assert.
+
 ## backlog/nice to have
 - Artemis II still replays measured Δv; giving it the same targeting treatment should close its remaining 1.4 %
 - the captured lunar orbit is 16,445 × 17,878 km against the 114 × 18,072 km actually achieved — the capture works, the descent to a low orbit is not modelled
