@@ -14,34 +14,11 @@ It was the Indian Space Agency’s Chandrayaan-2 mission that another time picke
 - Burn profile derived *from* that trajectory: propagating ballistically between ephemeris samples and booking the unexplained velocity change as Δv recovers all six published ISRO manoeuvres to within minutes
 - Earth's J2 oblateness, and standard gravitational parameters (GM) instead of mass × G
 - Verification in layers: analytic kernel checks, mission milestones, and tracking against the real trajectory
+- Adaptive step size, and Cassini's seven-year cruise to Saturn as a measure of how far a gravity-only model carries
 
 ## in progress
 - Implement simple UI “Cockpit” for zoom & focus-control, visualise interesting data like individual distances, polar-coordinates
 - Visualise several interesting cases, eg. Chandrayaan-2, Apollo 13, Voyager 1/2, …
-
-## how far does the model carry, out there?
-
-`data/scenarios/cassini_cruise.json` replays Cassini's seven-year flight to
-Saturn ballistically from a real starting state, with Venus, Mars, Jupiter and
-Saturn added as bodies. It answers one question: how long does a gravity-only
-model track an interplanetary trajectory?
-
-| | measured |
-|---|---|
-| 190 days, no manoeuvre, no flyby | **87,600 km error on a 107 million km orbit — 0.08 %** |
-| the Venus flyby, ten days later | **4.06 million km — a factor of 46** |
-
-That second row is why a flyby chain cannot be targeted with the machinery
-that got Chandrayaan-2 to the Moon. A model error that looks harmless before
-the encounter decides millions of kilometres after it. Cassini's trajectory is
-four such encounters in series.
-
-Adaptive step size (`physics/adaptive.py`) makes runs like this affordable:
-the step follows the local orbital period, so it is seconds near a planet and
-hours in cruise. On this trajectory that is 16,509 steps instead of 58,560,
-agreeing to a few kilometres in 1.4 billion. On a lunar mission it saves
-nothing — there the perigee passes set the pace anyway, which is the honest
-result and is what the tests assert.
 
 ## backlog/nice to have
 - Artemis II still replays measured Δv; giving it the same targeting treatment should close its remaining 1.4 %
@@ -146,6 +123,30 @@ for point — it flies its own to the same target orbits, and arrives. Telling
 those two questions apart is exactly what the layered verification is for. The
 older behaviour, where a replayed Δv left the apogee stalled at 61,000 km
 against a real 148,000 km, is what motivated the targeting above.
+
+## how far does the model carry, out there?
+
+`data/scenarios/cassini_cruise.json` replays Cassini's seven-year flight to
+Saturn ballistically from a real starting state, with Venus, Mars, Jupiter and
+Saturn added as bodies. It answers one question: how long does a gravity-only
+model track an interplanetary trajectory?
+
+| | measured |
+|---|---|
+| 190 days, no manoeuvre, no flyby | **87,600 km error on a 107 million km orbit — 0.08 %** |
+| the Venus flyby, ten days later | **4.06 million km — a factor of 46** |
+
+That second row is why a flyby chain cannot be targeted with the machinery
+that got Chandrayaan-2 to the Moon. A model error that looks harmless before
+the encounter decides millions of kilometres after it. Cassini's trajectory is
+four such encounters in series.
+
+Adaptive step size (`physics/adaptive.py`) makes runs like this affordable:
+the step follows the local orbital period, so it is seconds near a planet and
+hours in cruise. On this trajectory that is 16,509 steps instead of 58,560,
+agreeing to a few kilometres in 1.4 billion. On a lunar mission it saves
+nothing — there the perigee passes set the pace anyway, which is the honest
+result and is what the tests assert.
 
 ## running it
 
