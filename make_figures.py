@@ -197,29 +197,50 @@ def figure_burn_detection(outdir):
 
 
 def figure_trigger_effect(outdir):
-    """Warum die Zündlogik nötig ist: Apogäum mit und ohne Perigäums-Zündung."""
-    from models.trigger import PeriapsisTrigger
+    """Zielsteuerung gegen abgespieltes Delta-v.
+
+    Die Abbildung endet mit dem Mondeinfang. Danach umkreist die Sonde den
+    Mond, und ein *geozentrisches* Apogäum sagt über ihre Bahn nichts mehr aus
+    -- es zu zeichnen ergäbe nur Zacken.
+    """
+    import json
+
+    from data.scenario import SCENARIO_DIR
 
     truth = load_cache("chandrayaan2_truth")["records"]
     epoch = truth[0]["jd"]
-    days = np.array([record["jd"] - epoch for record in truth])
 
-    def apoapsis_track(use_trigger):
+    # Bis kurz nach dem Mondtransfer. Danach zerfaellt im Replay-Lauf die
+    # Bahn vollends, was nur noch Zacken erzeugt statt etwas zu zeigen.
+    until_day = 25.5
+    records = [r for r in truth if (r["jd"] - epoch) <= until_day]
+    days = np.array([record["jd"] - epoch for record in records])
+
+    with open(os.path.join(SCENARIO_DIR, "chandrayaan2.json"), encoding="utf-8") as f:
+        raw_maneuvers = json.load(f)["maneuvers"]
+
+    def apoapsis_track(replay):
+        """Bahnverlauf, wahlweise zielgesteuert oder als Delta-v abgespielt."""
         scenario = load_named_scenario("chandrayaan2")
         probe = scenario.body("Chandrayaan-2")
         earth = scenario.body("Earth")
-        if not use_trigger:
-            # Auslöser durch die geplante Absolutzeit ersetzen
-            for maneuver in probe.list_maneuvers:
-                if maneuver.trigger is not None:
-                    maneuver.time_start = maneuver.trigger.after + 3600.0
-                    maneuver.trigger = None
-                    maneuver.activated_at = maneuver.time_start
+
+        if replay:
+            # Den früheren Stand nachstellen: das gemessene Delta-v zur
+            # geplanten Zeit, ohne Ziel und ohne Auslöser.
+            for maneuver, entry in zip(probe.list_maneuvers, raw_maneuvers):
+                if "measured_delta_v" not in entry or "planned_at" not in entry:
+                    continue
+                maneuver.target_apoapsis = None
+                maneuver.delta_v = entry["measured_delta_v"]
+                maneuver.time_start = entry["planned_at"]
+                maneuver.trigger = None
+                maneuver.activated_at = entry["planned_at"]
 
         integrator = RustAcceleratedIntegrator(use_rust=True)
         elapsed = 0.0
         track = []
-        for record in truth:
+        for record in records:
             target = (record["jd"] - epoch) * 86400.0
             while elapsed < target:
                 integrator.calculate_states_batch(scenario.bodies, 60.0, elapsed)
@@ -234,21 +255,22 @@ def figure_trigger_effect(outdir):
 
     actual = np.array([
         min(elements_from_state(r["location"], r["velocity"], GM_EARTH).apoapsis, 5.0e8)
-        for r in truth
+        for r in records
     ])
 
     figure, axes = new_figure()
     style_axes(axes,
-               "Warum Manöver am Perigäum zünden müssen\n"
-               "Chandrayaan-2: Anhebung des Apogäums über die erdnahe Missionsphase",
+               "Ein gemessenes Delta-v abzuspielen genügt nicht\n"
+               "Chandrayaan-2: Anhebung des Apogäums bis zum Mondtransfer",
                "Tage seit dem Start", "Apogäum (1000 km)")
 
-    axes.plot(days, actual / 1e6, color=REAL, linewidth=2.4,
+    axes.plot(days, actual / 1e6, color=REAL, linewidth=2.6,
               label="real (JPL Horizons)")
-    axes.plot(days, apoapsis_track(True) / 1e6, color=ACCENT, linewidth=2.0,
-              label="Zündung am Perigäum")
-    axes.plot(days, apoapsis_track(False) / 1e6, color=WARN, linewidth=2.0,
-              linestyle="--", label="Zündung nach der Uhr")
+    axes.plot(days, apoapsis_track(replay=False) / 1e6, color=ACCENT,
+              linewidth=2.0, label="Zielsteuerung: jeder Burn fliegt sein Ziel an")
+    axes.plot(days, apoapsis_track(replay=True) / 1e6, color=WARN,
+              linewidth=2.0, linestyle="--",
+              label="abgespielt: gemessenes Delta-v zur geplanten Zeit")
 
     axes.set_ylim(0, 460)
     legend = axes.legend(facecolor=BACKGROUND, edgecolor=GRID, fontsize=9)

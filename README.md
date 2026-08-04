@@ -57,14 +57,19 @@ published 3 m/s**. Seven further spikes were discarded as bad ephemeris
 samples — their contributions cancel instead of changing the orbit, which is
 what tells an artefact from a burn.
 
-## Why manoeuvres fire at perigee
+## Why a measured Δv is not enough
 
-![Effect of the ignition logic](docs/figures/trigger_effect.png)
+![Targeting against replay](docs/figures/trigger_effect.png)
 
-A burn adds energy in proportion to the speed the craft already has, so the
-same Δv is worth far more at perigee. Fire by the clock and a slight drift
-means missing that point entirely — Chandrayaan-2's apogee then stalls at
-60,000 km (red) instead of climbing (green).
+Replaying the Δv that was measured on the flown trajectory leaves the apogee
+stalled at 95,000 km (red). Letting each burn name a target apoapsis and solve
+for its own Δv at ignition tracks the real climb all the way through the
+trans-lunar injection (green against blue).
+
+Two effects compound in the red curve. A burn adds energy in proportion to the
+speed the craft already has, so a Δv that misses perigee is worth much less;
+and a burn that falls short shortens the period, which walks the next perigee
+pass out of its window.
 
 ## The integrator
 
