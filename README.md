@@ -163,9 +163,10 @@ and known limitations recorded alongside the values.
 ## animations
 
 Simulation (orange) against the trajectory actually flown (blue, JPL
-Horizons). Bodies are named as they move, and the log in the lower left records
-every manoeuvre as it fires, with the Δv the targeting actually chose — so at
-the end you can read off which burns produced the trajectory you just watched.
+Horizons). Every body keeps one colour throughout and is named once in the
+legend; the log in the lower left records each manoeuvre as it fires, with the
+Δv the targeting actually chose — so at the end you can read off which burns
+produced the trajectory you just watched.
 
 ### Chandrayaan-2 — orbit raising and lunar transfer
 

@@ -247,3 +247,36 @@ class TestAnchoring(unittest.TestCase):
 
     def test_missions_without_anchors_return_nothing(self):
         self.assertEqual(make_animations.load_anchors("artemis2", 0.0), [])
+
+
+class TestBodyColours(unittest.TestCase):
+    """Feste Farben statt mitlaufender Namen."""
+
+    def test_every_drawn_body_has_its_own_colour(self):
+        """Zwei gleich gefärbte Punkte wären in der Legende nicht zu trennen."""
+        from rendering.plotstyle import body_colour
+
+        for key, mission in make_animations.MISSIONS.items():
+            with self.subTest(mission=key):
+                drawn = [mission["center"]] + list(mission["context"])
+                colours = [body_colour(name) for name in drawn]
+                self.assertEqual(len(set(colours)), len(colours),
+                                 f"Doppelte Farbe unter {drawn}")
+
+    def test_bodies_do_not_borrow_the_trajectory_colours(self):
+        """Blau und Orange gehören den Bahnen.
+
+        Ein Körper in derselben Farbe wäre schlimmer als zwei ähnliche
+        Planeten -- man hielte ihn für einen Teil der Bahn.
+        """
+        from rendering.plotstyle import BODY_COLOURS, REAL, SIMULATED
+
+        for name, colour in BODY_COLOURS.items():
+            with self.subTest(body=name):
+                self.assertNotEqual(colour.lower(), REAL.lower())
+                self.assertNotEqual(colour.lower(), SIMULATED.lower())
+
+    def test_unknown_bodies_fall_back_instead_of_failing(self):
+        from rendering.plotstyle import UNKNOWN_BODY, body_colour
+
+        self.assertEqual(body_colour("Planet X"), UNKNOWN_BODY)

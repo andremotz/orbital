@@ -314,6 +314,7 @@ def build_animation(mission_key, data, reference_seconds, reference_positions):
         REAL,
         SIMULATED,
         WARN,
+        body_colour,
         style_axes,
         style_legend,
     )
@@ -335,16 +336,19 @@ def build_animation(mission_key, data, reference_seconds, reference_positions):
                f"x ({unit}, ecliptic)", f"y ({unit}, ecliptic)")
     axes.set_aspect("equal")
 
-    context_label = (f"{mission['context'][0]}'s orbit" if len(mission["context"]) == 1
-                     else "planet orbits")
+    # Jeder Körper in eigener Farbe, Bahn und Punkt gleich eingefärbt. Die
+    # Legende benennt sie einmal fest, statt Namen durchs Bild wandern zu
+    # lassen -- mitlaufende Beschriftungen überlappen sich, verdecken die Bahn
+    # und laufen am Rand aus dem Diagramm.
+    #
+    # Kontextbahnen zuerst, damit sie hinter allem liegen -- und deutlich
+    # zurueckgenommen: sie geben Zusammenhang, sind aber nicht der Gegenstand.
     context_paths = [
-        axes.plot([], [], color=GRID, linewidth=1.0, linestyle="--",
-                  label=context_label if slot == 0 else None)[0]
-        for slot in range(len(mission["context"]))
+        axes.plot([], [], color=body_colour(name), linewidth=0.8,
+                  linestyle="--", alpha=0.3)[0]
+        for name in mission["context"]
     ]
-    # Die reale Bahn deutlich breiter als die simulierte: wo beide
-    # uebereinstimmen, bleibt sie als Saum sichtbar. Gleiche Strichbreiten
-    # liessen die Uebereinstimmung wie eine einzelne Kurve aussehen.
+
     # Wo Simulation und Wirklichkeit uebereinstimmen, verschmelzen zwei Linien
     # zu einer -- das laesst sich zeichnerisch nicht aufloesen. Deshalb liegt
     # die reale Bahn als breiterer Saum darunter, und wie gut es passt, sagt
@@ -353,23 +357,16 @@ def build_animation(mission_key, data, reference_seconds, reference_positions):
                            label="actually flown (JPL Horizons)")
     sim_path, = axes.plot([], [], color=SIMULATED, linewidth=1.4,
                           label="simulated")
-    probe_dot, = axes.plot([], [], "o", color=SIMULATED, markersize=6)
-    context_dots, = axes.plot([], [], "o", color=FOREGROUND, markersize=6)
 
-    # Namen laufen mit den Koerpern mit -- ohne sie sind die weissen Punkte
-    # nicht auseinanderzuhalten, sobald es mehr als einer ist.
-    # clip_on, damit ein Name am Bildrand abgeschnitten wird statt in den
-    # Aussenrand der Figur zu laufen
-    context_labels = [
-        axes.annotate(name, (0, 0), textcoords="offset points", xytext=(8, 5),
-                      color=FOREGROUND, fontsize=8, annotation_clip=True,
-                      clip_on=True)
+    # Koerper danach, damit sie in der Legende hinter den Bahnen stehen:
+    # erst worum es geht, dann was mitlaeuft.
+    context_dots = [
+        axes.plot([], [], "o", color=body_colour(name), markersize=6,
+                  label=name)[0]
         for name in mission["context"]
     ]
-    probe_label = axes.annotate(mission["body"], (0, 0),
-                                textcoords="offset points", xytext=(8, -12),
-                                color=SIMULATED, fontsize=9,
-                                annotation_clip=True, clip_on=True)
+    probe_dot, = axes.plot([], [], "o", color=SIMULATED, markersize=6,
+                           label=mission["body"])
     burn_dot, = axes.plot([], [], "o", color=WARN, markersize=13, alpha=0.75)
     # Verankerungen bleiben als Marker stehen: sie sind Stellen, an denen die
     # Wirklichkeit nachgereicht wurde, und duerfen nicht als Modellguete
@@ -378,9 +375,8 @@ def build_animation(mission_key, data, reference_seconds, reference_positions):
                              markeredgewidth=2.0,
                              label="real state re-injected" if data["anchors"] else None)
 
-    axes.plot(0, 0, "o", color=ACCENT, markersize=8)
-    axes.annotate(mission["center"], (0, 0), textcoords="offset points",
-                  xytext=(9, -14), color=FOREGROUND, fontsize=9)
+    axes.plot(0, 0, "o", color=body_colour(mission["center"]), markersize=9,
+              label=f"{mission['center']} (centre)")
 
     clock = axes.text(0.02, 0.97, "", transform=axes.transAxes, va="top",
                       color=FOREGROUND, fontsize=11, family="monospace")
@@ -390,7 +386,10 @@ def build_animation(mission_key, data, reference_seconds, reference_positions):
                         color=FOREGROUND, fontsize=8.5, family="monospace")
     event = axes.text(0.02, 0.05, "", transform=axes.transAxes,
                       color=WARN, fontsize=11)
-    style_legend(axes, loc="upper right")
+    # Bewusst einspaltig: zweispaltig waechst die Legende in die Breite und
+    # schiebt sich ueber die Anzeige oben links. Hoch und schmal stoert nicht.
+    style_legend(axes, loc="upper right",
+                 fontsize=7.5 if len(mission["context"]) > 2 else 9)
 
     def draw(frame):
         upto = min((frame + 1) * SAMPLES_PER_FRAME, len(probe))
@@ -402,16 +401,9 @@ def build_animation(mission_key, data, reference_seconds, reference_positions):
         for slot, path in enumerate(context_paths):
             path.set_data(context[slot, :upto, 0] / scale,
                           context[slot, :upto, 1] / scale)
-        context_dots.set_data(context[:, head, 0] / scale,
-                              context[:, head, 1] / scale)
-        for slot, annotation in enumerate(context_labels):
-            annotation.set_position((0, 0))
-            annotation.xy = (context[slot, head, 0] / scale,
-                             context[slot, head, 1] / scale)
-            annotation.set_x(context[slot, head, 0] / scale)
-            annotation.set_y(context[slot, head, 1] / scale)
-        probe_label.set_x(probe[head, 0] / scale)
-        probe_label.set_y(probe[head, 1] / scale)
+        for slot, dot in enumerate(context_dots):
+            dot.set_data([context[slot, head, 0] / scale],
+                         [context[slot, head, 1] / scale])
 
         reached = [a for a in data["anchors"] if a["index"] <= head]
         if reached:
@@ -474,9 +466,8 @@ def build_animation(mission_key, data, reference_seconds, reference_positions):
             title = ("manoeuvres executed" if data["burns"]
                      else "trajectory re-anchored")
             logbook.set_text(title + "\n" + "\n".join(entries))
-        return ([sim_path, real_path, probe_dot, context_dots, burn_dot,
-                 anchor_dots, clock, event, logbook, probe_label]
-                + context_paths + context_labels)
+        return ([sim_path, real_path, probe_dot, burn_dot, anchor_dots,
+                 clock, event, logbook] + context_paths + context_dots)
 
     runtime, fps, frame_count = timing(mission_key)
     animation = FuncAnimation(figure, draw, frames=frame_count,
