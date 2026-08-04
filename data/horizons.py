@@ -38,6 +38,13 @@ BODY_IDS = {
     "Chandrayaan-2 Lander": "-153",
     "Artemis II": "-1024",
     "Artemis I": "-1023",
+    "Cassini": "-82",
+    "Huygens": "-150",
+    "Venus": "299",
+    "Mars": "4",
+    "Jupiter": "5",
+    "Saturn": "6",
+    "Titan": "606",
 }
 
 # Schwerpunkt des Sonnensystems. Als Bezugspunkt deutlich besser geeignet als

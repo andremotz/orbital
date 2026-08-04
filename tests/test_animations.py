@@ -19,14 +19,21 @@ from data.scenario import load_named_scenario
 
 
 class TestTiming(unittest.TestCase):
-    """Beide Animationen sollen exakt gleich lang laufen."""
+    """Jede Animation läuft genau so lange, wie für sie angegeben."""
 
     def test_frame_count_matches_the_requested_duration(self):
-        expected = int(make_animations.DURATION_SECONDS
-                       * make_animations.FRAMES_PER_SECOND)
-        self.assertEqual(make_animations.FRAME_COUNT, expected)
-        self.assertEqual(make_animations.FRAME_COUNT / make_animations.FRAMES_PER_SECOND,
-                         make_animations.DURATION_SECONDS)
+        for key in make_animations.MISSIONS:
+            with self.subTest(mission=key):
+                runtime, fps, frames = make_animations.timing(key)
+                self.assertEqual(frames, int(round(runtime * fps)))
+                self.assertAlmostEqual(frames / fps, runtime, places=6)
+
+    def test_cassini_runs_longer_than_the_lunar_missions(self):
+        """Sieben Jahre in zwanzig Sekunden liessen die Vorbeiflüge
+        vorbeihuschen; eine Minute gibt ihnen Raum."""
+        self.assertGreaterEqual(make_animations.timing("cassini_cruise")[0], 60.0)
+        self.assertGreater(make_animations.timing("cassini_cruise")[0],
+                           make_animations.timing("chandrayaan2")[0] * 2)
 
     def test_trajectory_is_sampled_finer_than_the_frame_rate(self):
         """Sonst geriete der Bahnschweif zum Vieleck.
@@ -38,7 +45,8 @@ class TestTiming(unittest.TestCase):
         self.assertGreater(make_animations.SAMPLES_PER_FRAME, 1)
 
         duration = make_animations.MISSIONS["chandrayaan2"]["duration"]
-        samples = make_animations.FRAME_COUNT * make_animations.SAMPLES_PER_FRAME
+        samples = (make_animations.timing("chandrayaan2")[2]
+                   * make_animations.SAMPLES_PER_FRAME)
         step = duration / samples
 
         early_orbit_period = 13.8 * 3600.0
@@ -131,12 +139,17 @@ class TestMissionRegistry(unittest.TestCase):
                 self.assertIsNotNone(scenario.body(mission["body"]))
 
     def test_every_mission_has_a_fine_reference_track(self):
-        """Die groben Truth-Caches reichen zum Animieren nicht."""
+        """Die groben Truth-Caches reichen zum Animieren nicht.
+
+        Bei 12-Stunden-Abtastung bekaeme Chandrayaans 13,8-Stunden-Orbit sechs
+        Punkte, und die Ellipse geriete zum Sechseck. Gefordert ist deshalb ein
+        Raster, das die Missionsdauer in mindestens 500 Stuetzstellen zerlegt --
+        so viele Bilder hat die Animation.
+        """
         for key, mission in make_animations.MISSIONS.items():
             with self.subTest(mission=key):
                 records = load_cache(mission["truth"])["records"]
-                coarse = load_cache(key + "_truth")["records"]
-                self.assertGreater(len(records), len(coarse) * 5)
+                self.assertGreater(len(records), make_animations.timing(key)[2])
 
     def test_duration_stays_within_the_reference_data(self):
         """Sonst liefe die Animation über das Ende der Referenz hinaus."""
@@ -156,3 +169,114 @@ class TestMissionRegistry(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestFrameConfiguration(unittest.TestCase):
+    """Bezugspunkt und Kontextkörper sind pro Mission wählbar."""
+
+    def test_every_mission_names_its_frame(self):
+        for key, mission in make_animations.MISSIONS.items():
+            with self.subTest(mission=key):
+                for field in ("center", "context", "barycentric", "scale", "unit"):
+                    self.assertIn(field, mission)
+
+    def test_frame_bodies_exist_in_the_scenario(self):
+        from data.scenario import load_named_scenario
+
+        for key, mission in make_animations.MISSIONS.items():
+            with self.subTest(mission=key):
+                scenario = load_named_scenario(key)
+                names = {body.name for body in scenario.bodies}
+                self.assertIn(mission["center"], names)
+                for companion in mission["context"]:
+                    self.assertIn(companion, names)
+
+    def test_lunar_missions_are_geocentric_and_cassini_is_not(self):
+        """Der Bezug entscheidet, ob die Referenzbahn umgerechnet werden muss.
+
+        Beides zu verwechseln kostet über eine Million Kilometer -- genau
+        daran ist ein früherer Meilenstein gescheitert.
+        """
+        self.assertFalse(make_animations.MISSIONS["chandrayaan2"]["barycentric"])
+        self.assertTrue(make_animations.MISSIONS["cassini_cruise"]["barycentric"])
+        self.assertEqual(make_animations.MISSIONS["cassini_cruise"]["center"], "Sun")
+
+
+class TestAnchoring(unittest.TestCase):
+    """Verankerung an den Vorbeiflügen."""
+
+    def test_only_cassini_is_anchored(self):
+        """Über eine Mondmission lässt sich durchrechnen, über eine
+        Vorbeiflugkette nicht."""
+        self.assertIsNone(make_animations.MISSIONS["chandrayaan2"].get("anchors"))
+        self.assertIsNotNone(make_animations.MISSIONS["cassini_cruise"].get("anchors"))
+
+    def test_anchors_are_ordered_and_inside_the_mission(self):
+        from data.horizons import load_cache
+
+        epoch = load_cache("cassini_truth_fine")["records"][0]["jd"]
+        anchors = make_animations.load_anchors("cassini_cruise", epoch)
+
+        self.assertGreaterEqual(len(anchors), 4)
+        times = [a["time"] for a in anchors]
+        self.assertEqual(times, sorted(times))
+        self.assertGreater(times[0], 0.0)
+        self.assertLess(times[-1],
+                        make_animations.MISSIONS["cassini_cruise"]["duration"])
+
+    def test_anchors_carry_a_full_state(self):
+        from data.horizons import load_cache
+
+        epoch = load_cache("cassini_truth_fine")["records"][0]["jd"]
+        for anchor in make_animations.load_anchors("cassini_cruise", epoch):
+            with self.subTest(anchor=anchor["label"]):
+                self.assertEqual(len(anchor["location"]), 3)
+                self.assertEqual(len(anchor["velocity"]), 3)
+                self.assertTrue(anchor["label"])
+
+    def test_anchor_labels_name_the_encounters(self):
+        from data.horizons import load_cache
+
+        epoch = load_cache("cassini_truth_fine")["records"][0]["jd"]
+        labels = {a["label"] for a in
+                  make_animations.load_anchors("cassini_cruise", epoch)}
+
+        for expected in ("Venus 1", "Venus 2", "Earth", "Jupiter"):
+            with self.subTest(label=expected):
+                self.assertIn(expected, labels)
+
+    def test_missions_without_anchors_return_nothing(self):
+        self.assertEqual(make_animations.load_anchors("artemis2", 0.0), [])
+
+
+class TestBodyColours(unittest.TestCase):
+    """Feste Farben statt mitlaufender Namen."""
+
+    def test_every_drawn_body_has_its_own_colour(self):
+        """Zwei gleich gefärbte Punkte wären in der Legende nicht zu trennen."""
+        from rendering.plotstyle import body_colour
+
+        for key, mission in make_animations.MISSIONS.items():
+            with self.subTest(mission=key):
+                drawn = [mission["center"]] + list(mission["context"])
+                colours = [body_colour(name) for name in drawn]
+                self.assertEqual(len(set(colours)), len(colours),
+                                 f"Doppelte Farbe unter {drawn}")
+
+    def test_bodies_do_not_borrow_the_trajectory_colours(self):
+        """Blau und Orange gehören den Bahnen.
+
+        Ein Körper in derselben Farbe wäre schlimmer als zwei ähnliche
+        Planeten -- man hielte ihn für einen Teil der Bahn.
+        """
+        from rendering.plotstyle import BODY_COLOURS, REAL, SIMULATED
+
+        for name, colour in BODY_COLOURS.items():
+            with self.subTest(body=name):
+                self.assertNotEqual(colour.lower(), REAL.lower())
+                self.assertNotEqual(colour.lower(), SIMULATED.lower())
+
+    def test_unknown_bodies_fall_back_instead_of_failing(self):
+        from rendering.plotstyle import UNKNOWN_BODY, body_colour
+
+        self.assertEqual(body_colour("Planet X"), UNKNOWN_BODY)

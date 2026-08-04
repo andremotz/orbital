@@ -218,6 +218,7 @@ def _build_bodies(raw_bodies, raw_maneuvers, history_length):
                 direction=_vector(direction, context) if direction is not None else None,
                 relative_to=raw.get("relative_to"),
                 trigger=trigger,
+                label=raw.get("label"),
             )
         )
 
