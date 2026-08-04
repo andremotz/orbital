@@ -31,9 +31,22 @@ from rust_integration import RustAcceleratedIntegrator
 
 # Laufzeit und Bildrate. 25 Bilder je Sekunde wirken flüssig, ohne dass die
 # 500 Einzelbilder das GIF unnötig aufblähen.
-DURATION_SECONDS = 20.0
-FRAMES_PER_SECOND = 25
-FRAME_COUNT = int(DURATION_SECONDS * FRAMES_PER_SECOND)
+DEFAULT_DURATION_SECONDS = 20.0
+DEFAULT_FRAMES_PER_SECOND = 25
+
+
+def timing(mission_key):
+    """Laufzeit, Bildrate und Bildzahl einer Mission.
+
+    Die Reisephase von Cassini laeuft laenger: sieben Jahre in zwanzig
+    Sekunden liessen die Vorbeifluege vorbeihuschen. Dafuer genuegt dort eine
+    kleinere Bildrate, weil sich zwischen den Begegnungen wenig bewegt -- das
+    haelt zugleich das GIF in ertraeglicher Groesse.
+    """
+    mission = MISSIONS[mission_key]
+    seconds = mission.get("runtime", DEFAULT_DURATION_SECONDS)
+    fps = mission.get("fps", DEFAULT_FRAMES_PER_SECOND)
+    return seconds, fps, int(round(seconds * fps))
 
 # Die Bahn wird deutlich feiner abgetastet als Bilder gezeichnet werden. Sonst
 # geriete der Bahnschweif zum Vieleck: Chandrayaans früher Orbit dauert rund
@@ -90,6 +103,11 @@ MISSIONS = {
         "context": ["Venus", "Earth", "Jupiter", "Saturn"],
         "barycentric": True,
         "anchors": "cassini_anchors",
+        "runtime": 60.0,
+        "fps": 15,
+        # Dreimal so viele Bilder wie bei den Mondmissionen; ohne schmaleres
+        # GIF spraenge die Datei die Groesse, die in einer README zumutbar ist
+        "gif_width": 440,
         "scale": 1.495978707e11,
         "unit": "AU",
     },
@@ -142,7 +160,8 @@ def simulate(mission_key):
     anchors = load_anchors(mission_key, truth[0]["jd"])
     pending = list(anchors)
 
-    sample_count = FRAME_COUNT * SAMPLES_PER_FRAME
+    _, _, frame_count = timing(mission_key)
+    sample_count = frame_count * SAMPLES_PER_FRAME
     sample_step = mission["duration"] / sample_count
 
     probe_track = np.zeros((sample_count, 2))
@@ -153,6 +172,8 @@ def simulate(mission_key):
     burning = np.zeros(sample_count, dtype=bool)
     times = np.zeros(sample_count)
     anchored = []
+    fired = []
+    fired_seen = set()
 
     elapsed = 0.0
     for index in range(sample_count):
@@ -180,6 +201,22 @@ def simulate(mission_key):
         burning[index] = any(m.is_active(elapsed) for m in body.list_maneuvers)
         times[index] = elapsed
 
+        # Gezuendete Manoever festhalten. Bei einem Zielmanoever steht das
+        # Delta-v erst nach dem Zuenden fest, deshalb hier und nicht vorab.
+        for maneuver in body.list_maneuvers:
+            if maneuver.activated_at is None or maneuver in fired_seen:
+                continue
+            fired_seen.add(maneuver)
+            magnitude = maneuver.resolved_delta_v
+            if magnitude is None:
+                magnitude = maneuver.delta_v
+            fired.append({
+                "index": index,
+                "time": maneuver.activated_at,
+                "label": maneuver.label or "burn",
+                "delta_v": abs(magnitude) if magnitude is not None else None,
+            })
+
         if index % 1000 == 0:
             print(f"    {index}/{sample_count} Stützstellen", flush=True)
 
@@ -189,6 +226,7 @@ def simulate(mission_key):
         "burning": burning,
         "times": times,
         "anchors": anchored,
+        "burns": fired,
         "center": center_track,
         "scenario": scenario,
     }
@@ -317,6 +355,21 @@ def build_animation(mission_key, data, reference_seconds, reference_positions):
                           label="simulated")
     probe_dot, = axes.plot([], [], "o", color=SIMULATED, markersize=6)
     context_dots, = axes.plot([], [], "o", color=FOREGROUND, markersize=6)
+
+    # Namen laufen mit den Koerpern mit -- ohne sie sind die weissen Punkte
+    # nicht auseinanderzuhalten, sobald es mehr als einer ist.
+    # clip_on, damit ein Name am Bildrand abgeschnitten wird statt in den
+    # Aussenrand der Figur zu laufen
+    context_labels = [
+        axes.annotate(name, (0, 0), textcoords="offset points", xytext=(8, 5),
+                      color=FOREGROUND, fontsize=8, annotation_clip=True,
+                      clip_on=True)
+        for name in mission["context"]
+    ]
+    probe_label = axes.annotate(mission["body"], (0, 0),
+                                textcoords="offset points", xytext=(8, -12),
+                                color=SIMULATED, fontsize=9,
+                                annotation_clip=True, clip_on=True)
     burn_dot, = axes.plot([], [], "o", color=WARN, markersize=13, alpha=0.75)
     # Verankerungen bleiben als Marker stehen: sie sind Stellen, an denen die
     # Wirklichkeit nachgereicht wurde, und duerfen nicht als Modellguete
@@ -331,6 +384,10 @@ def build_animation(mission_key, data, reference_seconds, reference_positions):
 
     clock = axes.text(0.02, 0.97, "", transform=axes.transAxes, va="top",
                       color=FOREGROUND, fontsize=11, family="monospace")
+    # Was bisher gezuendet wurde, bleibt stehen -- so laesst sich am Ende
+    # ablesen, aus welchen Manoevern die Bahn entstanden ist.
+    logbook = axes.text(0.02, 0.30, "", transform=axes.transAxes, va="top",
+                        color=FOREGROUND, fontsize=8.5, family="monospace")
     event = axes.text(0.02, 0.05, "", transform=axes.transAxes,
                       color=WARN, fontsize=11)
     style_legend(axes, loc="upper right")
@@ -347,6 +404,14 @@ def build_animation(mission_key, data, reference_seconds, reference_positions):
                           context[slot, :upto, 1] / scale)
         context_dots.set_data(context[:, head, 0] / scale,
                               context[:, head, 1] / scale)
+        for slot, annotation in enumerate(context_labels):
+            annotation.set_position((0, 0))
+            annotation.xy = (context[slot, head, 0] / scale,
+                             context[slot, head, 1] / scale)
+            annotation.set_x(context[slot, head, 0] / scale)
+            annotation.set_y(context[slot, head, 1] / scale)
+        probe_label.set_x(probe[head, 0] / scale)
+        probe_label.set_y(probe[head, 1] / scale)
 
         reached = [a for a in data["anchors"] if a["index"] <= head]
         if reached:
@@ -391,15 +456,35 @@ def build_animation(mission_key, data, reference_seconds, reference_positions):
         if offset is not None:
             lines.append(f"{offset / 1e3:8,.0f} km off the real track")
         clock.set_text("\n".join(lines))
-        return ([sim_path, real_path, probe_dot, context_dots, burn_dot,
-                 anchor_dots, clock, event] + context_paths)
 
-    animation = FuncAnimation(figure, draw, frames=FRAME_COUNT,
-                              interval=1000.0 / FRAMES_PER_SECOND, blit=False)
+        entries = []
+        for burn in data["burns"]:
+            if burn["index"] > head:
+                continue
+            strength = ("" if burn["delta_v"] is None
+                        else f"  {burn['delta_v']:6.1f} m/s")
+            entries.append(f"  day {burn['time'] / 86400:6.1f}  "
+                           f"{burn['label']:<14}{strength}")
+        for anchor in data["anchors"]:
+            if anchor["index"] > head:
+                continue
+            entries.append(f"  day {anchor['time'] / 86400:6.1f}  "
+                           f"{anchor['label']:<14}  real state")
+        if entries:
+            title = ("manoeuvres executed" if data["burns"]
+                     else "trajectory re-anchored")
+            logbook.set_text(title + "\n" + "\n".join(entries))
+        return ([sim_path, real_path, probe_dot, context_dots, burn_dot,
+                 anchor_dots, clock, event, logbook, probe_label]
+                + context_paths + context_labels)
+
+    runtime, fps, frame_count = timing(mission_key)
+    animation = FuncAnimation(figure, draw, frames=frame_count,
+                              interval=1000.0 / fps, blit=False)
     return figure, animation
 
 
-def write_gif(source, target, width=560):
+def write_gif(source, target, fps, width=560):
     """Leitet aus dem MP4-Master ein GIF mit eigener Palette ab.
 
     Ein GIF kennt nur 256 Farben. Wer sie aus dem Inhalt bestimmt statt aus
@@ -407,7 +492,7 @@ def write_gif(source, target, width=560):
     Verläufen -- deshalb der Umweg über palettegen und paletteuse.
     """
     palette = target + ".palette.png"
-    chain = f"fps={FRAMES_PER_SECOND},scale={width}:-1:flags=lanczos"
+    chain = f"fps={fps},scale={width}:-1:flags=lanczos"
 
     subprocess.run(
         ["ffmpeg", "-y", "-v", "error", "-i", source,
@@ -437,9 +522,10 @@ def render(mission_key, outdir, make_gif=True):
     figure, animation = build_animation(mission_key, data, seconds, positions)
 
     video = os.path.join(outdir, f"{mission_key}.mp4")
-    print(f"  {mission_key}: {FRAME_COUNT} Bilder -> {video}", flush=True)
+    runtime, fps, frame_count = timing(mission_key)
+    print(f"  {mission_key}: {frame_count} Bilder, {runtime:.0f} s -> {video}", flush=True)
     animation.save(video, writer=FFMpegWriter(
-        fps=FRAMES_PER_SECOND, bitrate=4000,
+        fps=fps, bitrate=4000,
         extra_args=["-pix_fmt", "yuv420p"],
     ))
 
@@ -448,7 +534,8 @@ def render(mission_key, outdir, make_gif=True):
 
     if make_gif:
         gif = os.path.join(outdir, f"{mission_key}.gif")
-        write_gif(video, gif)
+        write_gif(video, gif, fps,
+                  width=MISSIONS[mission_key].get("gif_width", 560))
         print(f"  {mission_key}: -> {gif} "
               f"({os.path.getsize(gif) / 1e6:.1f} MB)", flush=True)
 
@@ -465,7 +552,7 @@ def preview(mission_key):
     )
 
     figure, animation = build_animation(mission_key, data, seconds, positions)
-    print(f"  {DURATION_SECONDS:.0f} Sekunden Laufzeit, Fenster schliessen zum Beenden")
+    print(f"  {timing(mission_key)[0]:.0f} Sekunden Laufzeit, Fenster schliessen zum Beenden")
     plt.show()
     return animation
 

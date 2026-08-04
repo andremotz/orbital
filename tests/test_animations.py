@@ -19,14 +19,21 @@ from data.scenario import load_named_scenario
 
 
 class TestTiming(unittest.TestCase):
-    """Beide Animationen sollen exakt gleich lang laufen."""
+    """Jede Animation läuft genau so lange, wie für sie angegeben."""
 
     def test_frame_count_matches_the_requested_duration(self):
-        expected = int(make_animations.DURATION_SECONDS
-                       * make_animations.FRAMES_PER_SECOND)
-        self.assertEqual(make_animations.FRAME_COUNT, expected)
-        self.assertEqual(make_animations.FRAME_COUNT / make_animations.FRAMES_PER_SECOND,
-                         make_animations.DURATION_SECONDS)
+        for key in make_animations.MISSIONS:
+            with self.subTest(mission=key):
+                runtime, fps, frames = make_animations.timing(key)
+                self.assertEqual(frames, int(round(runtime * fps)))
+                self.assertAlmostEqual(frames / fps, runtime, places=6)
+
+    def test_cassini_runs_longer_than_the_lunar_missions(self):
+        """Sieben Jahre in zwanzig Sekunden liessen die Vorbeiflüge
+        vorbeihuschen; eine Minute gibt ihnen Raum."""
+        self.assertGreaterEqual(make_animations.timing("cassini_cruise")[0], 60.0)
+        self.assertGreater(make_animations.timing("cassini_cruise")[0],
+                           make_animations.timing("chandrayaan2")[0] * 2)
 
     def test_trajectory_is_sampled_finer_than_the_frame_rate(self):
         """Sonst geriete der Bahnschweif zum Vieleck.
@@ -38,7 +45,8 @@ class TestTiming(unittest.TestCase):
         self.assertGreater(make_animations.SAMPLES_PER_FRAME, 1)
 
         duration = make_animations.MISSIONS["chandrayaan2"]["duration"]
-        samples = make_animations.FRAME_COUNT * make_animations.SAMPLES_PER_FRAME
+        samples = (make_animations.timing("chandrayaan2")[2]
+                   * make_animations.SAMPLES_PER_FRAME)
         step = duration / samples
 
         early_orbit_period = 13.8 * 3600.0
@@ -141,7 +149,7 @@ class TestMissionRegistry(unittest.TestCase):
         for key, mission in make_animations.MISSIONS.items():
             with self.subTest(mission=key):
                 records = load_cache(mission["truth"])["records"]
-                self.assertGreater(len(records), make_animations.FRAME_COUNT)
+                self.assertGreater(len(records), make_animations.timing(key)[2])
 
     def test_duration_stays_within_the_reference_data(self):
         """Sonst liefe die Animation über das Ende der Referenz hinaus."""
@@ -233,7 +241,7 @@ class TestAnchoring(unittest.TestCase):
         labels = {a["label"] for a in
                   make_animations.load_anchors("cassini_cruise", epoch)}
 
-        for expected in ("Venus 1", "Venus 2", "Erde", "Jupiter"):
+        for expected in ("Venus 1", "Venus 2", "Earth", "Jupiter"):
             with self.subTest(label=expected):
                 self.assertIn(expected, labels)
 

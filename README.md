@@ -162,8 +162,10 @@ and known limitations recorded alongside the values.
 
 ## animations
 
-Twenty seconds each, simulation (orange) against the trajectory actually flown
-(blue, JPL Horizons).
+Simulation (orange) against the trajectory actually flown (blue, JPL
+Horizons). Bodies are named as they move, and the log in the lower left records
+every manoeuvre as it fires, with the Δv the targeting actually chose — so at
+the end you can read off which burns produced the trajectory you just watched.
 
 ### Chandrayaan-2 — orbit raising and lunar transfer
 
@@ -185,12 +187,13 @@ actually finds.
 
 ![Cassini cruise](docs/animations/cassini_cruise.gif)
 
+A minute long — seven years compressed less brutally than the lunar missions.
 Two Venus flybys, Earth, then Jupiter, then out to 9 AU. The green crosses are
-where the *real* state was re-injected — a flyby amplifies the accumulated
-error by a factor of 46, so nothing propagates cleanly across one. Between
-them the model is on its own, and the running readout says how far off it is:
-around 236,000 km in the inner system, down to 93,000 km out at 8 AU on a
-3.4-year leg.
+where the *real* state was re-injected, and the log lists them: a flyby
+amplifies the accumulated error by a factor of 46, so nothing propagates
+cleanly across one. Between them the model is on its own, and the running
+readout says how far off it is — around 236,000 km in the inner system, down
+to 75,000 km out at 8 AU.
 
 The two curves overlap because they agree. That is what the number is for.
 
