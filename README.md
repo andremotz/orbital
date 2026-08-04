@@ -20,7 +20,8 @@ It was the Indian Space Agency’s Chandrayaan-2 mission that another time picke
 - Visualise several interesting cases, eg. Chandrayaan-2, Apollo 13, Voyager 1/2, …
 
 ## backlog/nice to have
-- **targeting** — the biggest remaining gap. Burns fire at fixed absolute times, so once the trajectory drifts even slightly they hit the wrong orbital phase and the orbit raising stops working. Real missions re-target continuously. Firing burns at perigee rather than by the clock would already help a lot.
+- Artemis II still replays measured Δv; giving it the same targeting treatment should close its remaining 1.4 %
+- the captured lunar orbit is 16,445 × 17,878 km against the 114 × 18,072 km actually achieved — the capture works, the descent to a low orbit is not modelled
 - more perturbations: the other planets, solar radiation pressure, higher terms of Earth's gravity field. A few m/s per perigee pass are still unaccounted for.
 - a 3D view — the simulation is 3D, but every view still projects onto the ecliptic
 - collision response — impacts are currently detected and reported, but not physically resolved
@@ -78,6 +79,29 @@ Regenerate every figure with:
 python make_figures.py
 ```
 
+## Closing the loop
+
+`python targeting.py chandrayaan2` searches for the trans-lunar injection
+target that brings the probe closest to the Moon. It has to be searched rather
+than copied: a burn of finite duration falls short of the impulsive
+calculation, so the target that works (479,873 km) sits above the apogee the
+mission actually reached (416,513 km).
+
+| | before targeting | after |
+|---|---|---|
+| closest approach to the Moon | 189,063 km | **16,266 km** |
+| Moon's Hill radius | 61,524 km | — |
+| captured into lunar orbit | no | **yes**, 16,445 × 17,878 km |
+
+That milestone is the first in this project marked `verified` rather than
+`aspirational` — it is checked on every run and fails the build if missed.
+
+One honest caveat, recorded in the scenario's limitations: with targeting the
+simulation no longer replays the recorded mission, it flies its own mission to
+the same target orbits. That is the normal way to do it, but it changes what
+the verification says — from *can it reproduce a given trajectory* to *can it
+fly a mission*.
+
 ## how well does it actually work?
 
 `python verification.py` compares a run against the real Chandrayaan-2
@@ -114,10 +138,16 @@ Twenty seconds each, simulation (orange) against the trajectory actually flown
 ![Chandrayaan-2](docs/animations/chandrayaan2.gif)
 
 The spiral of five perigee burns walking the apogee outwards is the whole
-first half of the mission. Then the real spacecraft departs for the Moon and
-the simulation does not follow — the Δv values were measured on the flown
-trajectory, and replaying them onto an orbit that has already drifted does
-something else. That gap is the open item at the top of the backlog.
+first half of the mission — and the probe now follows it to the Moon and is
+captured into lunar orbit.
+
+That took closed-loop targeting. Replaying a measured Δv onto an orbit that has
+already drifted does something else than it did where it was measured, and the
+error compounds: the first burn fell 15 % short, which shortened the period,
+which walked the perigee passes forward until a later burn missed its perigee
+entirely and fired 13.6 hours late. Each manoeuvre now names a **target
+apoapsis** instead and solves for its own Δv at ignition, from the state it
+actually finds.
 
 ### Artemis II — crewed lunar flyby
 

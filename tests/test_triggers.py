@@ -254,13 +254,17 @@ class TestScenarioTriggers(unittest.TestCase):
         maneuvers = scenario.body("Chandrayaan-2").list_maneuvers
 
         triggered = [m for m in maneuvers if m.trigger is not None]
-        self.assertEqual(len(triggered), 5)
+        self.assertEqual(len(triggered), 6)
 
         for maneuver in triggered:
             with self.subTest(maneuver=maneuver):
                 self.assertIsInstance(maneuver.trigger, PeriapsisTrigger)
-                self.assertEqual(maneuver.trigger.reference, "Earth")
                 self.assertIsNone(maneuver.activated_at)
+
+        # Die fünf erdnahen Anhebungen und der TLI zünden am Erdperigäum,
+        # der Mondorbit-Einschuss am mondnächsten Punkt
+        references = [m.trigger.reference for m in triggered]
+        self.assertEqual(references, ["Earth"] * 5 + ["Moon"])
 
     def test_unknown_trigger_reference_is_rejected(self):
         from data.scenario import ScenarioError, load_scenario

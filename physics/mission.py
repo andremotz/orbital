@@ -37,12 +37,51 @@ def update_schedule(all_bodies, time):
     """
     for body in all_bodies:
         for maneuver in body.list_maneuvers:
-            if maneuver.activated_at is not None or maneuver.trigger is None:
+            if maneuver.activated_at is not None:
                 continue
 
-            context = TriggerContext(body, time, maneuver.time_duration, all_bodies)
-            if maneuver.trigger.should_activate(context):
-                maneuver.activated_at = time
+            if maneuver.trigger is not None:
+                context = TriggerContext(body, time, maneuver.time_duration,
+                                         all_bodies)
+                if not maneuver.trigger.should_activate(context):
+                    continue
+
+            maneuver.activated_at = time
+            _resolve_target(maneuver, body, all_bodies)
+
+
+def _resolve_target(maneuver, body, all_bodies):
+    """Legt das Delta-v eines Zielmanövers beim Zünden ein für alle Mal fest.
+
+    Bewusst nur einmal und nicht in jedem Schritt: würde das Delta-v laufend
+    neu bestimmt, verfolgte der Burn sein eigenes Ziel, das er gerade
+    verschiebt -- er hörte nie auf, sich selbst nachzuregeln.
+    """
+    if maneuver.target_apoapsis is None:
+        return
+
+    reference = _find_body(all_bodies, maneuver.target_reference)
+    if reference is None:
+        raise ValueError(
+            f"Zielmanöver braucht einen Bezugskörper; "
+            f"'target_reference' ist {maneuver.target_reference!r}"
+        )
+
+    # Brennt das Manöver um das Periapsis herum, muss dort gerechnet werden --
+    # nicht am Zündpunkt, der eine halbe Brenndauer weiter draussen liegt.
+    trigger = maneuver.trigger
+    at_periapsis = (getattr(trigger, "reference", None) == maneuver.target_reference
+                    and trigger is not None
+                    and hasattr(trigger, "reference"))
+
+    state = body.getLatestState()
+    reference_state = reference.getLatestState()
+    maneuver.resolve(
+        state.vec_location - reference_state.vec_location,
+        state.vec_velocity - reference_state.vec_velocity,
+        reference.mu,
+        at_periapsis=at_periapsis,
+    )
 
 
 def mission_accelerations(all_bodies, time):

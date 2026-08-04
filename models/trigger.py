@@ -40,30 +40,61 @@ class TimeTrigger(Trigger):
 class PeriapsisTrigger(Trigger):
     """Zündet so, dass der Brennschluss um das Periapsis herum liegt.
 
-    `after` verhindert, dass gleich der erste Durchgang genommen wird -- die
-    Manöver einer Bahnanhebungskampagne folgen typischerweise im Abstand
-    mehrerer Umläufe. `reference` benennt den Körper, um den die Bahn
-    betrachtet wird.
+    `after` gibt die Freigabe, `skip` überspringt danach noch so viele
+    Durchgänge. Gezündet wird eine halbe Brenndauer vor dem Durchgang, sodass
+    der Schub symmetrisch um das Periapsis liegt -- so wird ein realer Burn
+    geflogen.
 
-    Gezündet wird eine halbe Brenndauer vor dem Durchgang, sodass der Schub
-    symmetrisch um das Periapsis liegt. So wird ein realer Burn geflogen.
+    Warum es `skip` braucht und eine blosse Zeitschranke nicht genügt: die
+    Umlaufzeit der Simulation weicht von der wirklichen ab, und der Fehler
+    summiert sich über die Umläufe. Bei Chandrayaan-2 waren es 2072 s je
+    Umlauf; nach vier Umläufen lag das simulierte Periapsis fast drei Stunden
+    vor dem wirklichen. Eine Freigabe, die auf den geplanten Zeitpunkt
+    gerechnet ist, fällt dann zwischen zwei Durchgänge -- der richtige liegt
+    davor und wird ausgeschlossen, gezündet wird ein voller Umlauf später.
+    Wer stattdessen zählt, trifft den gemeinten Durchgang auch dann, wenn er
+    sich zeitlich verschoben hat.
     """
 
-    def __init__(self, reference, after=0.0):
+    def __init__(self, reference, after=0.0, skip=0):
         self.reference = reference
         self.after = float(after)
+        self.skip = int(skip)
+        self._seen = 0
+        self._previous_remaining = None
+
+    def reset(self):
+        """Verwirft die gezählten Durchgänge für einen erneuten Lauf."""
+        self._seen = 0
+        self._previous_remaining = None
 
     def should_activate(self, context):
-        if context.time < self.after:
-            return False
-
         remaining = context.time_to_periapsis(self.reference)
         if remaining is None:
+            return False
+
+        # Ein Durchgang ist überschritten, wenn die Restzeit springt: kurz
+        # davor geht sie gegen null, unmittelbar danach steht wieder ein
+        # ganzer Umlauf aus.
+        if (self._previous_remaining is not None
+                and remaining > self._previous_remaining):
+            self._seen += 1
+        self._previous_remaining = remaining
+
+        if context.time < self.after:
+            # Vor der Freigabe zählt nichts; erst ab hier wird gezählt
+            self._seen = 0
+            return False
+
+        if self._seen < self.skip:
             return False
 
         return remaining <= context.duration / 2.0
 
     def describe(self):
+        if self.skip:
+            return (f"{self.skip + 1}. Periapsis um {self.reference} "
+                    f"nach t = {self.after:.0f}s")
         return f"Periapsis um {self.reference} nach t = {self.after:.0f}s"
 
 
@@ -78,7 +109,8 @@ def trigger_from_config(raw, context):
     if kind == "periapsis":
         if "reference" not in raw:
             raise ValueError(f"{context}: 'periapsis' braucht 'reference'")
-        return PeriapsisTrigger(raw["reference"], raw.get("after", 0.0))
+        return PeriapsisTrigger(raw["reference"], raw.get("after", 0.0),
+                                raw.get("skip", 0))
 
     raise ValueError(
         f"{context}: unbekannter Ausloeser {kind!r}, erlaubt sind "
