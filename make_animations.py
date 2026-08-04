@@ -45,19 +45,22 @@ SAMPLES_PER_FRAME = 12
 VIEW_MARGIN = 1.10
 ZOOM_SMOOTHING = 0.05
 
+# Die eingeblendeten Texte sind englisch, weil die Animationen in der README
+# stehen und diese englisch ist. Kommentare und Dokumentation bleiben deutsch
+# wie im übrigen Projekt.
 MISSIONS = {
     "chandrayaan2": {
         "body": "Chandrayaan-2",
         "truth": "chandrayaan2_truth_fine",
         "title": "Chandrayaan-2",
-        "subtitle": "Bahnanhebung und Mondtransfer, 22. Juli bis 6. September 2019",
+        "subtitle": "Orbit raising and lunar transfer, 22 July to 6 September 2019",
         "duration": 4_011_300.0,
     },
     "artemis2": {
         "body": "Artemis II",
         "truth": "artemis2_truth_fine",
         "title": "Artemis II",
-        "subtitle": "Bemannter Mondvorbeiflug auf freier Rückkehrbahn, 2. bis 11. April 2026",
+        "subtitle": "Crewed lunar flyby on a free-return trajectory, 2 to 11 April 2026",
         "duration": 769_380.0,
     },
 }
@@ -188,23 +191,23 @@ def build_animation(mission_key, data, reference_seconds, reference_positions):
     figure, axes = plt.subplots(figsize=(8.0, 8.0))
     figure.patch.set_facecolor(BACKGROUND)
     style_axes(axes, f"{mission['title']}\n{mission['subtitle']}",
-               "x (1000 km, Ekliptik)", "y (1000 km, Ekliptik)")
+               "x (1000 km, ecliptic)", "y (1000 km, ecliptic)")
     axes.set_aspect("equal")
 
     scale = 1e6  # Meter -> 1000 km
 
     moon_path, = axes.plot([], [], color=GRID, linewidth=1.0, linestyle="--",
-                           label="Mondbahn")
+                           label="Moon's orbit")
     real_path, = axes.plot([], [], color=REAL, linewidth=2.0,
-                           label="real (JPL Horizons)")
+                           label="actually flown (JPL Horizons)")
     sim_path, = axes.plot([], [], color=SIMULATED, linewidth=1.8,
-                          label="simuliert")
+                          label="simulated")
     probe_dot, = axes.plot([], [], "o", color=SIMULATED, markersize=6)
     moon_dot, = axes.plot([], [], "o", color=FOREGROUND, markersize=7)
     burn_dot, = axes.plot([], [], "o", color=WARN, markersize=13, alpha=0.75)
 
     axes.plot(0, 0, "o", color=ACCENT, markersize=8)
-    axes.annotate("Erde", (0, 0), textcoords="offset points", xytext=(9, -14),
+    axes.annotate("Earth", (0, 0), textcoords="offset points", xytext=(9, -14),
                   color=FOREGROUND, fontsize=9)
 
     clock = axes.text(0.02, 0.97, "", transform=axes.transAxes, va="top",
@@ -230,7 +233,7 @@ def build_animation(mission_key, data, reference_seconds, reference_positions):
 
         if data["burning"][head]:
             burn_dot.set_data([probe[head, 0] / scale], [probe[head, 1] / scale])
-            event.set_text("Triebwerk brennt")
+            event.set_text("engine burning")
         else:
             burn_dot.set_data([], [])
             event.set_text("")
@@ -240,8 +243,8 @@ def build_animation(mission_key, data, reference_seconds, reference_positions):
         axes.set_ylim(-limit, limit)
 
         distance = float(np.hypot(probe[head, 0], probe[head, 1]))
-        clock.set_text(f"Tag {moment / 86400:5.2f}\n"
-                       f"{distance / 1e3:8,.0f} km von der Erde".replace(",", "."))
+        clock.set_text(f"day {moment / 86400:5.2f}\n"
+                       f"{distance / 1e3:8,.0f} km from Earth")
         return [sim_path, moon_path, real_path, probe_dot, moon_dot, burn_dot,
                 clock, event]
 
