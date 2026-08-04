@@ -131,12 +131,17 @@ class TestMissionRegistry(unittest.TestCase):
                 self.assertIsNotNone(scenario.body(mission["body"]))
 
     def test_every_mission_has_a_fine_reference_track(self):
-        """Die groben Truth-Caches reichen zum Animieren nicht."""
+        """Die groben Truth-Caches reichen zum Animieren nicht.
+
+        Bei 12-Stunden-Abtastung bekaeme Chandrayaans 13,8-Stunden-Orbit sechs
+        Punkte, und die Ellipse geriete zum Sechseck. Gefordert ist deshalb ein
+        Raster, das die Missionsdauer in mindestens 500 Stuetzstellen zerlegt --
+        so viele Bilder hat die Animation.
+        """
         for key, mission in make_animations.MISSIONS.items():
             with self.subTest(mission=key):
                 records = load_cache(mission["truth"])["records"]
-                coarse = load_cache(key + "_truth")["records"]
-                self.assertGreater(len(records), len(coarse) * 5)
+                self.assertGreater(len(records), make_animations.FRAME_COUNT)
 
     def test_duration_stays_within_the_reference_data(self):
         """Sonst liefe die Animation über das Ende der Referenz hinaus."""
@@ -156,3 +161,81 @@ class TestMissionRegistry(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestFrameConfiguration(unittest.TestCase):
+    """Bezugspunkt und Kontextkörper sind pro Mission wählbar."""
+
+    def test_every_mission_names_its_frame(self):
+        for key, mission in make_animations.MISSIONS.items():
+            with self.subTest(mission=key):
+                for field in ("center", "context", "barycentric", "scale", "unit"):
+                    self.assertIn(field, mission)
+
+    def test_frame_bodies_exist_in_the_scenario(self):
+        from data.scenario import load_named_scenario
+
+        for key, mission in make_animations.MISSIONS.items():
+            with self.subTest(mission=key):
+                scenario = load_named_scenario(key)
+                names = {body.name for body in scenario.bodies}
+                self.assertIn(mission["center"], names)
+                for companion in mission["context"]:
+                    self.assertIn(companion, names)
+
+    def test_lunar_missions_are_geocentric_and_cassini_is_not(self):
+        """Der Bezug entscheidet, ob die Referenzbahn umgerechnet werden muss.
+
+        Beides zu verwechseln kostet über eine Million Kilometer -- genau
+        daran ist ein früherer Meilenstein gescheitert.
+        """
+        self.assertFalse(make_animations.MISSIONS["chandrayaan2"]["barycentric"])
+        self.assertTrue(make_animations.MISSIONS["cassini_cruise"]["barycentric"])
+        self.assertEqual(make_animations.MISSIONS["cassini_cruise"]["center"], "Sun")
+
+
+class TestAnchoring(unittest.TestCase):
+    """Verankerung an den Vorbeiflügen."""
+
+    def test_only_cassini_is_anchored(self):
+        """Über eine Mondmission lässt sich durchrechnen, über eine
+        Vorbeiflugkette nicht."""
+        self.assertIsNone(make_animations.MISSIONS["chandrayaan2"].get("anchors"))
+        self.assertIsNotNone(make_animations.MISSIONS["cassini_cruise"].get("anchors"))
+
+    def test_anchors_are_ordered_and_inside_the_mission(self):
+        from data.horizons import load_cache
+
+        epoch = load_cache("cassini_truth_fine")["records"][0]["jd"]
+        anchors = make_animations.load_anchors("cassini_cruise", epoch)
+
+        self.assertGreaterEqual(len(anchors), 4)
+        times = [a["time"] for a in anchors]
+        self.assertEqual(times, sorted(times))
+        self.assertGreater(times[0], 0.0)
+        self.assertLess(times[-1],
+                        make_animations.MISSIONS["cassini_cruise"]["duration"])
+
+    def test_anchors_carry_a_full_state(self):
+        from data.horizons import load_cache
+
+        epoch = load_cache("cassini_truth_fine")["records"][0]["jd"]
+        for anchor in make_animations.load_anchors("cassini_cruise", epoch):
+            with self.subTest(anchor=anchor["label"]):
+                self.assertEqual(len(anchor["location"]), 3)
+                self.assertEqual(len(anchor["velocity"]), 3)
+                self.assertTrue(anchor["label"])
+
+    def test_anchor_labels_name_the_encounters(self):
+        from data.horizons import load_cache
+
+        epoch = load_cache("cassini_truth_fine")["records"][0]["jd"]
+        labels = {a["label"] for a in
+                  make_animations.load_anchors("cassini_cruise", epoch)}
+
+        for expected in ("Venus 1", "Venus 2", "Erde", "Jupiter"):
+            with self.subTest(label=expected):
+                self.assertIn(expected, labels)
+
+    def test_missions_without_anchors_return_nothing(self):
+        self.assertEqual(make_animations.load_anchors("artemis2", 0.0), [])

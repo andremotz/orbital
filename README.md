@@ -181,6 +181,19 @@ entirely and fired 13.6 hours late. Each manoeuvre now names a **target
 apoapsis** instead and solves for its own Δv at ignition, from the state it
 actually finds.
 
+### Cassini-Huygens — seven years to Saturn
+
+![Cassini cruise](docs/animations/cassini_cruise.gif)
+
+Two Venus flybys, Earth, then Jupiter, then out to 9 AU. The green crosses are
+where the *real* state was re-injected — a flyby amplifies the accumulated
+error by a factor of 46, so nothing propagates cleanly across one. Between
+them the model is on its own, and the running readout says how far off it is:
+around 236,000 km in the inner system, down to 93,000 km out at 8 AU on a
+3.4-year leg.
+
+The two curves overlap because they agree. That is what the number is for.
+
 ### Artemis II — crewed lunar flyby
 
 ![Artemis II](docs/animations/artemis2.gif)
