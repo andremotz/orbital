@@ -148,6 +148,13 @@ agreeing to a few kilometres in 1.4 billion. On a lunar mission it saves
 nothing — there the perigee passes set the pace anyway, which is the honest
 result and is what the tests assert.
 
+## working on this
+
+[docs/AGENT_GUIDE.md](docs/AGENT_GUIDE.md) is a self-contained briefing: the
+architecture, what is settled in the physics and why, the two Horizons traps
+that cost real time, the measured results, and the open items. It is written
+to be pasted into an agent as context.
+
 ## running it
 
 ```bash

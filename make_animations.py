@@ -349,14 +349,19 @@ def build_animation(mission_key, data, reference_seconds, reference_positions):
         for name in mission["context"]
     ]
 
-    # Wo Simulation und Wirklichkeit uebereinstimmen, verschmelzen zwei Linien
-    # zu einer -- das laesst sich zeichnerisch nicht aufloesen. Deshalb liegt
-    # die reale Bahn als breiterer Saum darunter, und wie gut es passt, sagt
-    # der eingeblendete Ortsfehler.
-    real_path, = axes.plot([], [], color=REAL, linewidth=3.6,
+    # Die simulierte Bahn gestrichelt ueber die durchgezogene reale. Zwei
+    # deckungsgleiche Volllinien sind nicht nur ununterscheidbar, sie mitteln
+    # sich weg: REAL und SIMULATED liegen sich im Farbkreis fast gegenueber,
+    # und die Kantenglaettung macht aus (77,163,255) und (255,157,77) ein
+    # neutrales Grau. Gemessen waren es 7380 graue gegen 659 farbige Pixel --
+    # das Bild sah aus, als gaebe es nur eine einzige, graue Bahn.
+    #
+    # Gestrichelt teilen sich beide keine Pixel mehr: in den Luecken bleibt
+    # Blau blau, auf den Strichen Orange orange.
+    real_path, = axes.plot([], [], color=REAL, linewidth=2.6,
                            label="actually flown (JPL Horizons)")
-    sim_path, = axes.plot([], [], color=SIMULATED, linewidth=1.4,
-                          label="simulated")
+    sim_path, = axes.plot([], [], color=SIMULATED, linewidth=1.9,
+                          linestyle=(0, (5, 5)), label="simulated")
 
     # Koerper danach, damit sie in der Legende hinter den Bahnen stehen:
     # erst worum es geht, dann was mitlaeuft.
