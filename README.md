@@ -109,12 +109,14 @@ trajectory from JPL Horizons. Starting from real initial states, the purely
 ballistic phase tracks reality to **545 km after three days** — on a trajectory
 that swings between 6,550 and 51,500 km altitude.
 
-After the first burn it diverges, and honestly so: the manoeuvres replay at
-fixed absolute times without any targeting, so a small phase drift means the
-burn no longer happens at perigee where it would raise the apogee. The real
-apogee climbs to 148,000 km; the simulated one stays near 61,000 km. That gap
-is a guidance problem, not a physics one — which is exactly what the layered
-verification is there to tell apart.
+That number is the model's own accuracy, uncontaminated by guidance: no engine
+has fired yet, so the only thing being measured is the physics.
+
+After the burns start, the run no longer tracks the recorded trajectory point
+for point — it flies its own to the same target orbits, and arrives. Telling
+those two questions apart is exactly what the layered verification is for. The
+older behaviour, where a replayed Δv left the apogee stalled at 61,000 km
+against a real 148,000 km, is what motivated the targeting above.
 
 ## running it
 
