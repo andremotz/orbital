@@ -94,11 +94,11 @@ jobs:
 
       - name: Mission verification
         run: |
-          status=0
+          failed=0
           for path in data/scenarios/*.json; do
             scenario="$(basename "$path" .json)"
             echo "::group::$scenario"
-            python verification.py "$scenario" || status=1
+            python verification.py "$scenario" || failed=1
             echo "::endgroup::"
           done
-          exit "$status"
+          exit "$failed"
