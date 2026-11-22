@@ -1,4 +1,7 @@
 # orbital
+
+[![CI](https://github.com/andremotz/orbital/actions/workflows/ci.yml/badge.svg)](https://github.com/andremotz/orbital/actions/workflows/ci.yml)
+
 Orbital, a N-Body Gravitation simulator
 
 It was the Indian Space Agency’s Chandrayaan-2 mission that another time picked up my interest: If you have seen their impressive trans moon injection-manoeuvres you get the idea how impressive and interesting such mission-planning can be.

@@ -75,12 +75,7 @@ fn accelerations(
 /// Die Wulst liegt um die Rotationsachse, die im Bezugssystem der Simulation
 /// im Allgemeinen nicht mit der z-Achse zusammenfällt. Deshalb wird der
 /// Abstandsvektor in Anteile längs und quer zur Polachse zerlegt.
-fn add_oblateness(
-    positions: &[f64],
-    mus: &[f64],
-    oblateness: &[Oblateness],
-    out: &mut [f64],
-) {
+fn add_oblateness(positions: &[f64], mus: &[f64], oblateness: &[Oblateness], out: &mut [f64]) {
     let n = mus.len();
 
     for (source, shape) in oblateness.iter().enumerate() {
@@ -88,8 +83,8 @@ fn add_oblateness(
             continue;
         }
 
-        let scale = -1.5 * shape.j2 * mus[source] * shape.equatorial_radius
-            * shape.equatorial_radius;
+        let scale =
+            -1.5 * shape.j2 * mus[source] * shape.equatorial_radius * shape.equatorial_radius;
 
         for target in 0..n {
             if target == source {
@@ -158,33 +153,54 @@ pub fn rk4_step(
         scratch_positions[i] = positions[i] + k1_velocity[i] * half_step;
         scratch_velocities[i] = velocities[i] + k1_acceleration[i] * half_step;
     }
-    accelerations(&scratch_positions, mus, thrust, oblateness, &mut k2_acceleration);
+    accelerations(
+        &scratch_positions,
+        mus,
+        thrust,
+        oblateness,
+        &mut k2_acceleration,
+    );
     let k2_velocity = scratch_velocities.clone();
 
     for i in 0..len {
         scratch_positions[i] = positions[i] + k2_velocity[i] * half_step;
         scratch_velocities[i] = velocities[i] + k2_acceleration[i] * half_step;
     }
-    accelerations(&scratch_positions, mus, thrust, oblateness, &mut k3_acceleration);
+    accelerations(
+        &scratch_positions,
+        mus,
+        thrust,
+        oblateness,
+        &mut k3_acceleration,
+    );
     let k3_velocity = scratch_velocities.clone();
 
     for i in 0..len {
         scratch_positions[i] = positions[i] + k3_velocity[i] * time_step;
         scratch_velocities[i] = velocities[i] + k3_acceleration[i] * time_step;
     }
-    accelerations(&scratch_positions, mus, thrust, oblateness, &mut k4_acceleration);
+    accelerations(
+        &scratch_positions,
+        mus,
+        thrust,
+        oblateness,
+        &mut k4_acceleration,
+    );
     let k4_velocity = scratch_velocities.clone();
 
     let weight = time_step / 6.0;
     for i in 0..len {
-        positions[i] += weight
-            * (k1_velocity[i] + 2.0 * (k2_velocity[i] + k3_velocity[i]) + k4_velocity[i]);
+        positions[i] +=
+            weight * (k1_velocity[i] + 2.0 * (k2_velocity[i] + k3_velocity[i]) + k4_velocity[i]);
         velocities[i] += weight
             * (k1_acceleration[i]
                 + 2.0 * (k2_acceleration[i] + k3_acceleration[i])
                 + k4_acceleration[i]);
     }
 }
+
+/// New positions and velocities, each (n, 3).
+type StepResult = (Py<PyArray2<f64>>, Py<PyArray2<f64>>);
 
 /// Ein RK4-Schritt für das gesamte System.
 ///
@@ -193,6 +209,10 @@ pub fn rk4_step(
 /// `equatorial_radii` (n,) und `poles` (n, 3) beschreiben die Abplattung;
 /// ein j2 von null lässt den Körper als Kugel gelten. Zurück kommen neue
 /// Positionen und Geschwindigkeiten als frische Arrays.
+// The argument list is the Python calling convention: one array per
+// quantity, as NumPy hands them over. Bundling them would only move the
+// count into a Python-side wrapper.
+#[allow(clippy::too_many_arguments)]
 #[pyfunction]
 fn rk4_step_python(
     py: Python<'_>,
@@ -204,7 +224,7 @@ fn rk4_step_python(
     equatorial_radii: &Bound<'_, PyArray1<f64>>,
     poles: &Bound<'_, PyArray2<f64>>,
     time_step: f64,
-) -> PyResult<(Py<PyArray2<f64>>, Py<PyArray2<f64>>)> {
+) -> PyResult<StepResult> {
     let n_objects = mus.len();
 
     for (name, array) in [

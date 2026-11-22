@@ -16,7 +16,11 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from data.constants import GM_EARTH
 from models.maneuver import Maneuver
+from models.massive_object import MassiveObject
+from models.oblateness import Oblateness
+from models.state import State
 from physics.integrator import step
 from rust_integration import RUST_AVAILABLE, RustAcceleratedIntegrator, gather_arrays
 from tests.test_physics import AU, MASS_SUN, circular_orbit_pair, make_object
@@ -43,6 +47,60 @@ def scenario():
                     [29780.0 + 2220.0, 0.0, -310.0],
                     is_heavy=False),
     ]
+
+
+def oblate_earth_with_satellite(oblateness=True):
+    """An oblate Earth with a satellite in a low, inclined orbit.
+
+    The four-body scenario above treats every body as a sphere, so it cannot
+    see an error in the J2 term -- a kernel whose J2 was 1 % off passed every
+    other parity test. Here J2 is the largest perturbation there is: at
+    630 km altitude it is about a thousandth of central gravity. The orbit is
+    inclined against Earth's equator, so the term has components along and
+    across the pole.
+
+    The system sits away from the origin and moves on purpose. The comparison
+    is relative to each body's own position and velocity; an Earth at rest at
+    the origin would only move by some 1e-14 m under the satellite's pull, and
+    comparing rounding noise of that size relative to itself says nothing.
+    """
+    radius = 7.0e6
+    speed = float(np.sqrt(GM_EARTH / radius))
+    inclination = np.radians(51.6)
+    offset = np.array([1.0e8, 0.0, 0.0])
+    drift = np.array([1000.0, 0.0, 0.0])
+
+    earth = MassiveObject(
+        State(drift.copy(), offset.copy()), 5.9722e24, 6.371e6, (0, 255, 255),
+        "Earth", True, [], mu=GM_EARTH,
+        oblateness=Oblateness.earth() if oblateness else None,
+    )
+    satellite = MassiveObject(
+        State(drift + np.array([0.0, speed * np.cos(inclination),
+                                speed * np.sin(inclination)]),
+              offset + np.array([radius, 0.0, 0.0])),
+        1000.0, 5.0, (255, 255, 255), "Satellite", False, [],
+    )
+    return [earth, satellite]
+
+
+REQUIRE_RUST = os.environ.get("ORBITAL_REQUIRE_RUST") == "1"
+
+
+class TestKernelIsRequired(unittest.TestCase):
+    """Turns a missing kernel into a failure where it must be present.
+
+    Locally the parity tests are skipped without a kernel, so the suite stays
+    usable with nothing but numpy. In CI that skip would hide a kernel that
+    failed to build or import. Setting ORBITAL_REQUIRE_RUST=1 makes it fail.
+    """
+
+    @unittest.skipUnless(REQUIRE_RUST, "ORBITAL_REQUIRE_RUST is not set")
+    def test_kernel_is_importable(self):
+        self.assertTrue(
+            RUST_AVAILABLE,
+            "ORBITAL_REQUIRE_RUST=1, but orbital_rust_kernel cannot be imported",
+        )
 
 
 @unittest.skipUnless(RUST_AVAILABLE, "Rust-Kernel nicht gebaut")
@@ -115,6 +173,30 @@ class TestRustParity(unittest.TestCase):
         """Auch über viele Schritte darf nichts auseinanderlaufen."""
         self.assert_same_trajectory(scenario(), scenario(), steps=5000,
                                     time_step=60.0, rtol=1e-9)
+
+    def test_oblateness_matches(self):
+        """The J2 term must be computed identically in both kernels."""
+        self.assert_same_trajectory(
+            oblate_earth_with_satellite(), oblate_earth_with_satellite(),
+            steps=1000, time_step=30.0, rtol=1e-9,
+        )
+
+    def test_oblateness_actually_changes_the_result(self):
+        """Guard: if J2 had no effect, the test above would prove nothing."""
+        with_j2 = oblate_earth_with_satellite(oblateness=True)
+        without_j2 = oblate_earth_with_satellite(oblateness=False)
+
+        integrator = RustAcceleratedIntegrator(use_rust=True)
+        for index in range(1000):
+            simulation_time = index * 30.0
+            integrator.calculate_states_batch(with_j2, 30.0, simulation_time)
+            integrator.calculate_states_batch(without_j2, 30.0, simulation_time)
+
+        separation = np.linalg.norm(
+            with_j2[1].getLatestState().vec_location
+            - without_j2[1].getLatestState().vec_location
+        )
+        self.assertGreater(separation, 1e4, "J2 had no effect in the Rust kernel")
 
     def test_thrust_is_applied_identically(self):
         """Manöver-Schub muss im Rust-Kernel genauso wirken wie in Python."""
