@@ -75,10 +75,13 @@ only fail on a collision.
 
 ## 7. Known gaps
 
-- Tracking is hard-wired to the Chandrayaan-2 cache and body name (WI-009).
-- The ballistic-phase accuracy (545 km) and the Artemis II apogee error
-  (1.4 %) are stated in the README but not asserted by a test; a regression
-  would go unnoticed (WI-010).
+- Tracking assumes a geocentric cache named `<scenario>_truth` and tracks
+  the first body with manoeuvres (WI-009).
+- The README's numbers are asserted only loosely: the ballistic phase to
+  < 1,000 km (README: 545 km), the Artemis II maximum distance to < 3 %
+  (README: 1.4 %). The detected TLI is checked to ± 2 m/s. The closest lunar
+  approach (16,266 km) is checked only through the ± 6,000 km capture
+  milestone. A regression inside those bounds goes unnoticed (WI-010).
 - A milestone can only express "distance at a time". It cannot express
   "is in a bound orbit", "periapsis below x" or "event happened by t"
   (WI-017).

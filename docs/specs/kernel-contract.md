@@ -46,8 +46,10 @@ J2_s(d) = −(3/2) · j2_s · mu_s · R_s² / r⁵ · [ (1 − 5 z²/r²) d⊥ +
 - Self-interaction MUST be excluded without dividing by zero.
 - The J2 term acts on the other bodies only; the reaction on the oblate body
   itself is neglected.
-- No softening, no collision handling: two bodies at the same position produce
-  non-finite values. Detecting that is the caller's job.
+- No softening, no collision handling. Two *distinct* bodies at exactly the
+  same position are not specified: Python produces non-finite values, Rust
+  skips the pair. Detecting a collision before that happens is the caller's
+  job.
 
 ## 3. Step
 
@@ -75,13 +77,20 @@ For identical inputs, the two implementations MUST agree to:
 |---|---|
 | single step | 1e-12 |
 | 5,000 steps of 60 s, with and without thrust, in and out of the ecliptic | 1e-9 |
+| 1,000 steps of 30 s, oblate Earth with a low, inclined satellite | 1e-9 |
 
 measured per body as |Δ| / max(|expected|, scale). This is enforced by
-`tests/test_rust_parity.py`.
+`tests/test_rust_parity.py`. Each case has a guard test showing that the
+effect under test (thrust, out-of-plane motion, J2) actually changes the
+result — the J2 case was added after a kernel with J2 off by 1 % passed every
+other parity test.
+
+The parity tests are skipped when the kernel is not importable. With
+`ORBITAL_REQUIRE_RUST=1`, as CI sets it, a missing kernel is a failure.
 
 Note: the two are *not* bit-identical — summation order differs between the
-vectorised NumPy and the scalar Rust code. The README's "bit-identical"
-overstates this (WI-003).
+vectorised NumPy and the scalar Rust code, and Rust exploits Newton's third
+law to visit each pair once.
 
 Any new force term or integrator MUST be added to both implementations and to
 the parity tests in the same change.
@@ -108,4 +117,3 @@ against the analytic secular rate), which would test the term end to end.
   row; there is no multi-step call (WI-012).
 - The fallback in `RustAcceleratedIntegrator` catches every exception from the
   kernel and continues in Python (WI-008).
-- Parity tests are skipped when the kernel is not built (WI-001).

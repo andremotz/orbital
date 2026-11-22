@@ -41,4 +41,6 @@ The details are specified in [specs/verification.md](../specs/verification.md).
   burns, *when* something happens is itself uncertain, so tolerances have to
   be wide (± 6,000 km for lunar capture). Orbit-element or event-based
   milestones would be sharper (WI-017).
-- Layer 3 is hard-wired to Chandrayaan-2 in `verification.py` (WI-009).
+- Layer 3 assumes a geocentric reference trajectory in a cache named
+  `<scenario>_truth`, and tracks the first body that carries manoeuvres
+  (WI-009).

@@ -4,10 +4,14 @@ Diese Integration bringt die Performance-kritischen Runge-Kutta-Berechnungen in 
 
 ## 🎯 Warum Rust?
 
-- **Performance**: 5-50x schneller als Python für numerische Berechnungen
+- **Performance**: der RK4-Schritt selbst ist 5,7x schneller, mit
+  Erdabplattung rund 15x (Messung unten). Ein ganzer Missionslauf gewinnt
+  derzeit nur rund 2x, weil die Manöverlogik in Python bleibt.
 - **Speichersicherheit**: Keine Memory-Leaks oder Buffer-Overflows
-- **Parallele Verarbeitung**: Effiziente Multi-Threading-Unterstützung
 - **Nahtlose Integration**: PyO3 ermöglicht einfache Python-Bindings
+
+Der Kernel rechnet single-threaded; bei vier Körpern lohnt keine
+Parallelisierung (siehe unten).
 
 ## 📁 Projektstruktur
 
@@ -116,13 +120,28 @@ integrator.calculate_states_batch(massive_objects, time_step)
 
 ### Gemessene Werte
 
-Gemessen auf Apple Silicon, 4 Körper, identische Startbedingungen für beide
-Läufe (der Benchmark arbeitet auf Kopien, siehe `MassiveObject.copy()`):
+Gemessen am 2026-11-22 auf Apple Silicon mit Python 3.14, die vier Körper
+des Chandrayaan-2-Szenarios, 20000 Schritte zu 60 s, identische
+Startbedingungen für beide Läufe (der Benchmark arbeitet auf Kopien, siehe
+`MassiveObject.copy()`):
 
 | Szenario | Python | Rust | Speedup |
 |----------|--------|------|---------|
-| 4 Objekte, 20000 Schritte, 3D | 0.641s | 0.091s | **7.0x** |
-| dieselben Objekte mit Erdabplattung J2 | 3.442s | 0.281s | **12.2x** |
+| ohne Manöver, alle Körper als Kugel | 0.52s | 0.092s | **5.7x** |
+| ohne Manöver, mit Erdabplattung J2 | 1.43s | 0.098s | **14.7x** |
+| mit den sechs Manövern des Szenarios und J2 | 2.70s | 1.21s | **2.2x** |
+
+Die letzte Zeile ist der Fall, der in `verification.py` und `targeting.py`
+tatsächlich läuft. Dort kostet nicht mehr die Integration, sondern die
+Manöverlogik: Vor jedem Schritt prüft Python jeden noch ausstehenden
+Periapsis-Auslöser, also Bahnelemente und Zeit bis zum Periapsis. Das macht
+rund 55 µs je Schritt aus, mehr als der Rust-Schritt selbst. Schneller wird
+ein Missionslauf erst, wenn diese Prüfung billiger wird oder seltener läuft
+(WI-012 in docs/work-items.md).
+
+Frühere Messungen an derselben Stelle (7.0x / 12.2x, im README 7.4x) liegen
+in derselben Grössenordnung wie die ersten beiden Zeilen; sie stammen von
+einem anderen Stand und lassen sich nicht mehr genau nachstellen.
 
 Die Abplattung vergrössert den Abstand: Python wertet sie über eine Schleife
 je abgeplattetem Körper mit NumPy-Zwischenarrays aus, Rust erledigt sie in
@@ -174,13 +193,18 @@ Overhead bedeutet.
 
 - **PyO3**: Nahtlose Integration zwischen Rust und Python
 - **NumPy**: Effiziente Array-Operationen
-- **Fallback**: Automatischer Wechsel zu Python bei Fehlern
+- **Fallback**: Ist der Kernel nicht importierbar, rechnet Python. Wirft der
+  Kernel während eines Schritts eine Exception, rechnet Python diesen Schritt
+  -- still, mit einer Warnung auf stdout. Ein Fehler im Kernel fällt so nur
+  als langsamerer Lauf auf (WI-008).
 
 ### Speicherverwaltung
 
 - **Rust**: Automatische Speicherverwaltung ohne Garbage Collection
-- **Python**: Minimale Kopien, direkte Array-Operationen
-- **Interop**: Zero-copy-Übertragung zwischen Rust und Python
+- **Interop**: Keine Zero-copy-Übertragung. Python sammelt je Schritt sieben
+  Arrays aus den Körperobjekten, der Kernel kopiert jedes in einen `Vec` und
+  baut das Ergebnis über `Vec<Vec<f64>>` neu auf. Bei vier Körpern ist das
+  billig gegen die Manöverlogik, aber nicht gratis.
 
 ## 🐛 Troubleshooting
 

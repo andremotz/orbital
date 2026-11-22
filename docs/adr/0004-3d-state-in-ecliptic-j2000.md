@@ -29,5 +29,5 @@ the 23.44° obliquity).
 - States from JPL Horizons can be used directly as initial conditions and as
   ground truth.
 - All views still project onto the ecliptic; a real 3D view is open (WI-019).
-- Some docstrings still describe the 2D model (`data/scenario.py`). They are
-  wrong and must be fixed (WI-003).
+- The move left docstrings describing the 2D model behind
+  (`data/scenario.py`); corrected on 2026-11-22.

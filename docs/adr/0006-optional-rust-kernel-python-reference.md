@@ -27,14 +27,16 @@ The contract is specified in [specs/kernel-contract.md](../specs/kernel-contract
 
 ## Consequences
 
-- Measured ~7.4× speedup on four bodies.
+- The step itself is 5.7× faster on four bodies, about 15× with J2. A full
+  mission run gains only about 2×: the per-step trigger checks in Python
+  cost more than the Rust step (measurements in `RUST_INTEGRATION.md`).
 - Every force model has to be implemented twice and kept in parity.
-- The parity tests are skipped when the kernel is not built. Without CI that
-  builds the kernel, the Rust path is effectively untested on a fresh clone
-  (WI-001).
+- The parity tests are skipped when the kernel is not built, so the suite
+  stays usable with numpy alone. CI builds the kernel and sets
+  `ORBITAL_REQUIRE_RUST=1`, which turns that skip into a failure.
 - The kernel is called once per step and copies every array on the way in and
-  out. Most of the remaining cost is that boundary, not the arithmetic
-  (WI-012).
+  out. That boundary is not free, but in mission runs the Python mission
+  logic between steps costs more (WI-012).
 - The build is a shell script that copies a `.so` into the repository root
   rather than a standard `maturin` build (WI-005).
 - The fallback also triggers on *any* exception inside a step, which can hide

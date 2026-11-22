@@ -439,7 +439,8 @@ class TestArtemisScenario(unittest.TestCase):
             exit_code = verification.main(["verification.py", "artemis2"])
 
         self.assertEqual(exit_code, 0)
-        self.assertIn("JPL Horizons", output.getvalue())
+        # The tracking header, which only the tracking section prints
+        self.assertIn("Vergleich mit der real geflogenen Bahn", output.getvalue())
 
 
 if __name__ == "__main__":

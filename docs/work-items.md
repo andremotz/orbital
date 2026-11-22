@@ -1,6 +1,7 @@
 # Work items
 
-Backlog as of 2026-11-22, based on commit `83718a0`. Items are ordered by
+Backlog as of 2026-11-22. WI-002 (`pyproject.toml`) and WI-003 (statements
+that were no longer true) are done. Items are ordered by
 priority within each group. Sizes: **S** ≤ half a day, **M** 1–2 days,
 **L** more.
 
@@ -12,18 +13,16 @@ ID.
 |---|---|---|---|
 | **Now — foundations** | | | |
 | [WI-001](#wi-001-continuous-integration) | Continuous integration | S | – |
-| [WI-002](#wi-002-pyprojecttoml-and-declared-dependencies) | `pyproject.toml` and declared dependencies | S | – |
-| [WI-003](#wi-003-fix-statements-that-are-no-longer-true) | Fix statements that are no longer true | S | – |
-| [WI-004](#wi-004-linting-and-formatting) | Linting and formatting | S | WI-002 |
+| [WI-004](#wi-004-linting-and-formatting) | Linting and formatting | S | – |
 | **Next — structure** | | | |
-| [WI-005](#wi-005-package-layout-and-maturin-build) | Package layout and maturin build | L | WI-001, WI-002 |
+| [WI-005](#wi-005-package-layout-and-maturin-build) | Package layout and maturin build | L | WI-001 |
 | [WI-006](#wi-006-single-cli-remove-duplicate-entry-points) | Single CLI, remove duplicate entry points | M | WI-005 |
 | [WI-007](#wi-007-simulation-run-object) | `Simulation` run object | L | WI-005 |
 | [WI-008](#wi-008-no-silent-backend-fallback-no-prints-in-library-code) | No silent backend fallback, no prints in library code | S | – |
 | [WI-009](#wi-009-make-tools-mission-agnostic) | Make tools mission-agnostic | M | – |
 | [WI-010](#wi-010-pin-the-readmes-numbers-with-tests) | Pin the README's numbers with tests | M | WI-009 |
 | [WI-011](#wi-011-honour-burn-durations-exactly) | Honour burn durations exactly | M | – |
-| [WI-012](#wi-012-multi-step-rust-call) | Multi-step Rust call | M | WI-007 |
+| [WI-012](#wi-012-make-mission-runs-fast) | Make mission runs fast | M | WI-007 |
 | [WI-013](#wi-013-translate-to-english) | Translate to English | M | ADR-0012 accepted |
 | [WI-014](#wi-014-scenario-schema-and-format-version) | Scenario schema and format version | S | – |
 | [WI-015](#wi-015-horizons-fetch-command-and-cache-provenance) | Horizons fetch command and cache provenance | S | – |
@@ -42,6 +41,10 @@ ID.
 
 ### WI-001: Continuous integration
 
+**Status.** Implemented in `.github/workflows/ci.yml`; every step was
+reproduced locally in a fresh clone. Stays open until the first run on GitHub
+is green and the J2 check below has been seen to turn it red there.
+
 **Why.** There is no CI. On a fresh clone the 9 Rust parity tests are skipped,
 so the Rust path — the one `targeting.py` and `verification.py` use by
 default — is unverified unless someone builds the kernel locally. A `verified`
@@ -49,57 +52,21 @@ milestone "fails the build" only if there is a build.
 
 **What.** GitHub Actions workflow on push and pull request:
 
-- matrix: Python 3.10 – 3.14 on Linux, plus macOS on one version;
-- job 1: install, `python -m unittest discover tests`;
-- job 2: build the Rust kernel, run the suite again and **fail if any parity
-  test was skipped**; `cargo fmt --check`, `cargo clippy -- -D warnings`;
-- job 3: `python verification.py` for every scenario.
+- `python`: Python 3.10 – 3.14 on Linux plus 3.14 on macOS, with only numpy
+  installed, `python -m unittest discover tests`;
+- `rust`: Python 3.10 and 3.14 on Linux plus 3.14 on macOS — `cargo fmt
+  --check`, `cargo clippy -- -D warnings`, build the kernel, run the suite
+  with `ORBITAL_REQUIRE_RUST=1` (a skipped parity test is a failure), then
+  `python verification.py` for every scenario on the Rust path.
 
-**Acceptance.** A pull request shows all three jobs; deliberately breaking the
-J2 term in `lib.rs` turns job 2 red. README has a status badge.
-
-### WI-002: `pyproject.toml` and declared dependencies
-
-**Why.** `requirements.txt` is unpinned, lists `pygame` and `scipy` as
-required although one viewer and one tool use them, and nothing declares the
-supported Python version (the macOS system Python 3.9 has no numpy and simply
-fails on import).
-
-**What.** `pyproject.toml` with `requires-python`, core dependency `numpy`,
-extras `viz` (matplotlib), `pygame`, `targeting` (scipy), `dev`. Keep
-`requirements.txt` as a thin pointer or remove it. Document `ffmpeg` as an
-external requirement for animations.
-
-**Acceptance.** `pip install -e .[dev]` in a clean venv is enough to run the
-test suite. README setup section says so.
-
-### WI-003: Fix statements that are no longer true
-
-**Why.** Several places describe an earlier state of the project.
-
-**What.**
-
-- `data/scenario.py` module docstring and `Milestone` docstring say the
-  simulation is 2D.
-- README says the Rust kernel is "bit-identical"; the tests assert relative
-  agreement of 1e-12 (one step) and 1e-9 (5,000 steps). Say that instead.
-- `data/horizons.py` refers to a `refresh_cache` function and to
-  `python -m data.horizons`; neither exists (see WI-015).
-- `RUST_INTEGRATION.md` promises "5–50×", multi-threading and SIMD; measured
-  is ~7.4× on four bodies, single-threaded. Reduce it to build instructions
-  and measured numbers, or fold it into the README.
-- README "in progress" lists a cockpit that has no code yet, and its
-  "running it" section omits `targeting.py`, `detect_maneuvers.py` and the
-  setup step.
-- The stalled-apogee figure is quoted as 95,000 km in one README section and
-  61,000 km in another; state which run each refers to.
-
-**Acceptance.** Each bullet is either corrected or shown to be right.
+**Acceptance.** A pull request shows both jobs; deliberately breaking the J2
+term in `lib.rs` turns `rust` red (locally confirmed: J2 × 1.01 puts the
+parity satellite 5 km off). README has a status badge.
 
 ### WI-004: Linting and formatting
 
 **What.** `ruff` (lint + format) configured in `pyproject.toml`, run in CI.
-`rustfmt` and `clippy` for the kernel. Optional `pre-commit` config. Fix what
+(`rustfmt` and `clippy` already run, see WI-001.) Optional `pre-commit` config. Fix what
 it finds (trailing whitespace, missing final newlines, unused imports such as
 `CONST_GRAVITY` in `physics/gravity.py`).
 
@@ -111,7 +78,10 @@ it finds (trailing whitespace, missing final newlines, unused imports such as
 
 ### WI-005: Package layout and maturin build
 
-**Why / what.** ADR-0013, points 1, 2 and 4. Move-only: no behaviour change.
+**Why / what.** ADR-0013, points 1 and 4. Move-only: no behaviour change.
+`pyproject.toml` exists, but has package discovery switched off — it only
+declares dependencies, because the top-level packages are named `data`,
+`models`, `physics`, `rendering`. This item gives them a real package.
 
 **Acceptance.** Tests run from any directory with no `sys.path` manipulation
 (11 files do it today). `pip install .` builds the kernel when a Rust
@@ -166,8 +136,8 @@ output is free of backend banners.
 ### WI-009: Make tools mission-agnostic
 
 **Why.** Adding a third mission currently needs code changes:
-`verification.py` hard-codes `"Chandrayaan-2"`, `"Earth"` and `GM_EARTH` for
-tracking; `detect_maneuvers.py` hard-codes launch date, mission end, probe
+`verification.py` assumes a geocentric reference in `<scenario>_truth` and
+tracks "the first body with manoeuvres"; `detect_maneuvers.py` hard-codes launch date, mission end, probe
 mass and system bodies; `targeting.py` defaults to manoeuvre index 4 and
 lunar bounds, and picks "the first body with manoeuvres" as the probe;
 `BODY_IDS` in `data/horizons.py` is a fixed table.
@@ -176,15 +146,17 @@ lunar bounds, and picks "the first body with manoeuvres" as the probe;
 block (Horizons id, centre, time span, cache names), and per-manoeuvre search
 bounds. Tools read them from there.
 
-**Acceptance.** `verification.py artemis2` prints a tracking section.
-Adding a mission requires a scenario file and cache files only.
+**Acceptance.** Adding a mission requires a scenario file and cache files
+only. (`verification.py artemis2` already prints a tracking section.)
 
 ### WI-010: Pin the README's numbers with tests
 
 **Why.** The headline results — 545 km after three days ballistic, Artemis II
 apogee 1.4 % off, TLI detected at 388.3 m/s, closest approach 16,266 km — are
-prose. Nothing fails if a change makes them worse, and nothing updates them
-if a change makes them better.
+asserted only loosely, if at all: < 1,000 km, < 3 %, ± 2 m/s, and the closest
+approach only through a ± 6,000 km milestone. A change can make them markedly
+worse without failing anything, and nothing updates them when a change makes
+them better.
 
 **What.** Regression tests with explicit bounds for each number. Emit the
 numbers as JSON from the verification run and generate the README table from
@@ -207,22 +179,29 @@ choice in both kernels' callers, since thrust is assembled in Python.
 **Acceptance.** Test: a `delta_v` burn of 355 s at a 60 s step delivers its Δv
 to within 0.1 % in free space. Parity tests still pass.
 
-### WI-012: Multi-step Rust call
+### WI-012: Make mission runs fast
 
-**Why.** Each step crosses the Python/Rust boundary once, gathers seven arrays
-from objects, copies each into a `Vec`, and builds the result through
-`Vec<Vec<f64>>`. For four bodies that overhead dominates; the 7.4× is mostly a
-measure of the boundary.
+**Why.** The Rust step is 5.7× faster than Python, about 15× with J2, but a
+Chandrayaan-2 run with its six manoeuvres gains only 2.2× (2.70 s → 1.21 s for
+20,000 steps). Before every step Python checks every pending periapsis
+trigger — osculating elements and time to periapsis — at roughly 55 µs per
+step, more than the Rust step itself. The array gathering and copying at the
+boundary come second.
 
-**What.** Borrow the NumPy arrays instead of copying
-(`PyReadonlyArray`), write results into caller-provided arrays, and add
-`rk4_steps(…, n_steps)` for coasting phases as described in
-[specs/simulation-run-api.md](specs/simulation-run-api.md) §6. Release the
-GIL during the loop. Add a benchmark (`orbital bench`) and record results.
+**What.**
 
-**Acceptance.** Parity tolerances unchanged. Benchmark numbers before and
-after are recorded in the kernel docs. A full Chandrayaan-2 targeting search
-is measurably faster.
+1. Make the trigger check cheap: skip a trigger before its `after` time
+   (today the elements are computed from t = 0 to count passes), and compute
+   elements once per step and reference body, not once per trigger.
+2. Then the boundary: borrow the NumPy arrays (`PyReadonlyArray`) instead of
+   copying, write into caller-provided arrays, and add `rk4_steps(…, n)` for
+   coasts between trigger windows, per
+   [specs/simulation-run-api.md](specs/simulation-run-api.md) §6.
+3. A benchmark command, with results recorded in `RUST_INTEGRATION.md`.
+
+**Acceptance.** A Chandrayaan-2 mission run gains at least 4× over pure
+Python. Parity tolerances unchanged. A full targeting search is measurably
+faster.
 
 ### WI-013: Translate to English
 
