@@ -125,6 +125,17 @@ against a real 148,000 km, is what motivated the targeting above.
 
 ## running it
 
+Python 3.10 or newer. In a virtual environment:
+
+```bash
+pip install -e ".[dev]"             # numpy, matplotlib, scipy, pygame
+```
+
+Only numpy is needed for the simulation and the test suite; the extras are
+`viz` (matplotlib — viewers, figures, animations), `pygame`, and `targeting`
+(scipy). Animations also need `ffmpeg` on the PATH. The install only pulls in
+dependencies — the scripts run from the checkout.
+
 ```bash
 python -m unittest discover tests   # full test suite
 python verification.py              # mission verification report
