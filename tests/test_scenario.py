@@ -382,9 +382,6 @@ class TestMissionVerification(unittest.TestCase):
         self.assertLess(inclination, 6.0)
 
 
-if __name__ == "__main__":
-    unittest.main()
-
 
 class TestArtemisScenario(unittest.TestCase):
     """Das Artemis-II-Szenario aus echten Horizons-Daten."""
@@ -424,3 +421,26 @@ class TestArtemisScenario(unittest.TestCase):
         relative = distance[0].error / distance[0].milestone.expected_distance
         self.assertLess(relative, 0.03,
                         f"Groesste Erdentfernung weicht um {relative:.1%} ab")
+
+    def test_verification_cli_succeeds(self):
+        """`python verification.py artemis2` must run through to exit code 0.
+
+        It used to crash in the tracking section -- on the hard-wired
+        spacecraft name, and on triggered manoeuvres, whose time_start is
+        None -- so the documented command always ended in exit code 1.
+        """
+        import contextlib
+        import io
+
+        import verification
+
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output):
+            exit_code = verification.main(["verification.py", "artemis2"])
+
+        self.assertEqual(exit_code, 0)
+        self.assertIn("JPL Horizons", output.getvalue())
+
+
+if __name__ == "__main__":
+    unittest.main()
