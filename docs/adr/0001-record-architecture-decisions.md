@@ -7,7 +7,7 @@
 
 The reasoning behind this project's design is unusually valuable — most
 decisions were forced by a concrete, measured failure (an apogee stalled at
-95,000 km, a burn that fired 13.6 hours late). Today that reasoning lives in
+94,000 km, a burn that fired 13.6 hours late). Today that reasoning lives in
 German docstrings, commit messages and README prose. It is hard to find, and
 it is easy to undo a decision without knowing what it was protecting against.
 

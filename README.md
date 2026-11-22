@@ -11,7 +11,7 @@ It was the Indian Space Agency’s Chandrayaan-2 mission that another time picke
 - N-Bodies: Rocket should rotate around Moon, Moon should rotate around Earth, Earth should rotate around Sun
 - Correct Runge-Kutta 4th order, integrating all bodies simultaneously (verified 4th order convergence)
 - 3D state vectors, so inclined orbits are representable — the Moon's orbit carries its real 5.145° tilt against the ecliptic
-- Rust kernel via PyO3 for the RK4 step, held to the Python path by parity tests — agreement to 1e-12 relative for one step and 1e-9 over 5,000 steps, not bit-identical, since the summation order differs. The step itself is 5.7x faster (about 15x with J2); a full mission run gains only about 2x, because the manoeuvre logic stays in Python — see [RUST_INTEGRATION.md](RUST_INTEGRATION.md)
+- Rust kernel via PyO3 for the RK4 step, held to the Python path by parity tests — agreement to 1e-12 relative for one step and 1e-9 over 5,000 steps, not bit-identical, since the summation order differs. The step itself is 5.7x faster (about 15x with J2); a full Chandrayaan-2 run gains only 1.8x, because the manoeuvre logic stays in Python — see [RUST_INTEGRATION.md](RUST_INTEGRATION.md)
 - Mission- & object-data moved from source-code to external JSON config (`data/scenarios/`)
 - NASA Horizons integration — real initial states, and Chandrayaan-2's actually flown trajectory as ground truth
 - Burn profile derived *from* that trajectory: propagating ballistically between ephemeris samples and booking the unexplained velocity change as Δv recovers all six published ISRO manoeuvres to within minutes
@@ -128,9 +128,9 @@ for point — it flies its own to the same target orbits, and arrives. Telling
 those two questions apart is exactly what the layered verification is for. What
 motivated the targeting above was the earlier, open-loop profile (commit
 `7af1626`): nine burns replayed at fixed absolute times, which left the apogee
-near 61,000 km while the real one climbed to 148,000 km. Firing at perigee and
-the current six-burn profile brought the replay up to the ~94,000 km in the
-figure above; only targeting closes the rest.
+near 61,000 km while the real one climbed to 148,000 km. The replay in the
+figure above is a different run, of today's six-burn profile, and stalls at
+about 94,000 km; either way only targeting closes the gap.
 
 ## running it
 

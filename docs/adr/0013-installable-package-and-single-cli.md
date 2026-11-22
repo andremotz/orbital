@@ -16,10 +16,9 @@ today:
   The two matplotlib ones are near-duplicates.
 - Two files named `test_*.py` in the root are demo/benchmark scripts, not part
   of the test suite.
-- There is no `pyproject.toml`; dependencies are an unpinned
-  `requirements.txt` in which `pygame` and `scipy` are required although only
-  one viewer and one tool use them. The supported Python version is not
-  declared.
+- `pyproject.toml` declares the dependencies, extras and Python floor
+  (WI-002), but has package discovery switched off: installing it installs
+  only the dependencies, and the code runs from the checkout.
 - The Rust kernel is built by a shell script that copies a `.so` into the
   root.
 
@@ -28,9 +27,8 @@ today:
 1. Move the code into one package, `orbital/` (src layout), with subpackages
    `physics`, `models`, `scenario`, `horizons`, `verification`, `targeting`,
    `viz`. Scenario files and the Horizons cache become package data.
-2. Add `pyproject.toml` with core dependency `numpy` and extras: `viz`
-   (matplotlib), `pygame`, `targeting` (scipy), `dev`. Declare
-   `requires-python`.
+2. Switch packaging on in the existing `pyproject.toml`; the extras (`viz`,
+   `pygame`, `targeting`, `dev`) stay as declared.
 3. One console script, `orbital`, with subcommands:
    `run`, `verify`, `target`, `detect-burns`, `figures`, `animate`, `bench`.
    The integrator backend is an option (`--backend auto|python|rust`), not a
@@ -51,7 +49,8 @@ today:
 
 ## Alternatives considered
 
-- **Keep flat scripts, add only `pyproject.toml`.** Fixes dependencies, keeps
-  the duplicated entry points and the cwd dependence.
+- **Keep flat scripts with the dependency-only `pyproject.toml`.** The
+  current state: dependencies are declared, but the duplicated entry points
+  and the cwd dependence remain.
 - **Keep the shell build.** Works on macOS/Linux, but no wheels, no Windows,
   and a build artefact in the source root.

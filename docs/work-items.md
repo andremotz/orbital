@@ -181,11 +181,12 @@ to within 0.1 % in free space. Parity tests still pass.
 
 ### WI-012: Make mission runs fast
 
-**Why.** The Rust step is 5.7× faster than Python, about 15× with J2, but a
-Chandrayaan-2 run with its six manoeuvres gains only 2.2× (2.70 s → 1.21 s for
-20,000 steps). Before every step Python checks every pending periapsis
-trigger — osculating elements and time to periapsis — at roughly 55 µs per
-step, more than the Rust step itself. The array gathering and copying at the
+**Why.** The Rust step is 5.8× faster than Python, about 15× with J2, but a
+Chandrayaan-2 run with its six manoeuvres gains only 1.8× (3.25 s → 1.79 s for
+20,000 steps, freshly loaded scenario per run). Before every step Python
+checks every pending periapsis trigger — osculating elements and time to
+periapsis — at roughly 85 µs per step against 4.5 µs for the Rust step; a
+profile puts ~93 % of the run there. The array gathering and copying at the
 boundary come second.
 
 **What.**
@@ -197,7 +198,10 @@ boundary come second.
    copying, write into caller-provided arrays, and add `rk4_steps(…, n)` for
    coasts between trigger windows, per
    [specs/simulation-run-api.md](specs/simulation-run-api.md) §6.
-3. A benchmark command, with results recorded in `RUST_INTEGRATION.md`.
+3. A benchmark command that loads the scenario afresh for every run, with
+   results recorded in `RUST_INTEGRATION.md`. (`PerformanceBenchmark` runs on
+   copies that share manoeuvre objects, so the second run finds them already
+   fired.)
 
 **Acceptance.** A Chandrayaan-2 mission run gains at least 4× over pure
 Python. Parity tolerances unchanged. A full targeting search is measurably

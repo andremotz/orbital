@@ -9,7 +9,7 @@ Replaying a Δv measured on the flown trajectory is open-loop control. On an
 orbit that has already drifted, the same Δv does something else, and the
 error compounds: the first Chandrayaan-2 burn fell 15 % short, which shortened
 the period, which walked later perigee passes out of their windows. The
-replayed mission stalled at a 95,000 km apogee.
+replayed mission stalled at an apogee of about 94,000 km.
 
 ## Decision
 

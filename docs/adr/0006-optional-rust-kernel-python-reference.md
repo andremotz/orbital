@@ -27,9 +27,9 @@ The contract is specified in [specs/kernel-contract.md](../specs/kernel-contract
 
 ## Consequences
 
-- The step itself is 5.7× faster on four bodies, about 15× with J2. A full
-  mission run gains only about 2×: the per-step trigger checks in Python
-  cost more than the Rust step (measurements in `RUST_INTEGRATION.md`).
+- The step itself is 5.8× faster on four bodies, about 15× with J2. A full
+  Chandrayaan-2 run gains only 1.8×: the per-step trigger checks in Python
+  cost far more than the Rust step (measurements in `RUST_INTEGRATION.md`).
 - Every force model has to be implemented twice and kept in parity.
 - The parity tests are skipped when the kernel is not built, so the suite
   stays usable with numpy alone. CI builds the kernel and sets

@@ -6,7 +6,7 @@ Diese Integration bringt die Performance-kritischen Runge-Kutta-Berechnungen in 
 
 - **Performance**: der RK4-Schritt selbst ist 5,7x schneller, mit
   Erdabplattung rund 15x (Messung unten). Ein ganzer Missionslauf gewinnt
-  derzeit nur rund 2x, weil die Manöverlogik in Python bleibt.
+  derzeit nur 1,8x, weil die Manöverlogik in Python bleibt.
 - **Speichersicherheit**: Keine Memory-Leaks oder Buffer-Overflows
 - **Nahtlose Integration**: PyO3 ermöglicht einfache Python-Bindings
 
@@ -121,21 +121,26 @@ integrator.calculate_states_batch(massive_objects, time_step)
 ### Gemessene Werte
 
 Gemessen am 2026-11-22 auf Apple Silicon mit Python 3.14, die vier Körper
-des Chandrayaan-2-Szenarios, 20000 Schritte zu 60 s, identische
-Startbedingungen für beide Läufe (der Benchmark arbeitet auf Kopien, siehe
-`MassiveObject.copy()`):
+des Chandrayaan-2-Szenarios, 20000 Schritte zu 60 s, bester von drei Läufen.
+Jeder Lauf lädt das Szenario frisch:
 
 | Szenario | Python | Rust | Speedup |
 |----------|--------|------|---------|
-| ohne Manöver, alle Körper als Kugel | 0.52s | 0.092s | **5.7x** |
-| ohne Manöver, mit Erdabplattung J2 | 1.43s | 0.098s | **14.7x** |
-| mit den sechs Manövern des Szenarios und J2 | 2.70s | 1.21s | **2.2x** |
+| ohne Manöver, alle Körper als Kugel | 0.53s | 0.090s | **5.8x** |
+| ohne Manöver, mit Erdabplattung J2 | 1.44s | 0.093s | **15.4x** |
+| mit den sechs Manövern des Szenarios und J2 | 3.25s | 1.79s | **1.8x** |
+
+`PerformanceBenchmark` ist für die letzte Zeile nicht geeignet. Er arbeitet
+zwar auf Kopien (`MassiveObject.copy()`), die teilen sich aber die
+Manöver-Objekte: Was der erste Lauf zündet, gilt im zweiten als bereits
+gezündet. So entstand zunächst eine geschönte Messung von 2.2x (WI-007).
 
 Die letzte Zeile ist der Fall, der in `verification.py` und `targeting.py`
 tatsächlich läuft. Dort kostet nicht mehr die Integration, sondern die
 Manöverlogik: Vor jedem Schritt prüft Python jeden noch ausstehenden
 Periapsis-Auslöser, also Bahnelemente und Zeit bis zum Periapsis. Das macht
-rund 55 µs je Schritt aus, mehr als der Rust-Schritt selbst. Schneller wird
+rund 85 µs je Schritt aus, fast zwanzigmal so viel wie der Rust-Schritt
+selbst (4.5 µs); ein Profil legt rund 93 % der Laufzeit in diese Prüfung. Schneller wird
 ein Missionslauf erst, wenn diese Prüfung billiger wird oder seltener läuft
 (WI-012 in docs/work-items.md).
 
