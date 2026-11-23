@@ -69,7 +69,7 @@ Keine zusätzlichen. PyO3 und die numpy-Bindings sind Rust-Crates und werden
 von cargo geholt; auf Python-Seite genügt das `numpy` aus `requirements.txt`.
 
 PyO3 muss die verwendete Python-Version unterstützen -- die Crates in
-`Cargo.toml` sind auf 0.26 gepinnt, was Python bis 3.14 abdeckt.
+`Cargo.toml` sind auf 0.30 gepinnt; die CI baut gegen Python 3.10 und 3.14.
 
 ## 🚀 Verwendung
 
