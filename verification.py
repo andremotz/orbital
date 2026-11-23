@@ -329,7 +329,6 @@ def main(argv):
 
 def _print_tracking_if_available(scenario_name):
     """Hängt den Vergleich mit der realen Bahn an, falls Referenzdaten da sind."""
-    from data.constants import GM_EARTH
     from data.horizons import HorizonsError, load_cache
 
     try:
@@ -338,17 +337,30 @@ def _print_tracking_if_available(scenario_name):
         return
 
     scenario = load_named_scenario(scenario_name)
+    # The reference trajectories are geocentric (see data/horizons_cache/).
+    spacecraft = _spacecraft(scenario)
+    earth = scenario.body("Earth")
     samples = track_against_truth(
-        scenario, truth["records"], "Chandrayaan-2", "Earth", GM_EARTH
+        scenario, truth["records"], spacecraft.name, earth.name, earth.mu
     )
+    # Read after the run: a triggered manoeuvre has no time_start, its
+    # ignition time is only known once the run has fired it.
     maneuver_times = [
-        maneuver.time_start
-        for body in scenario.bodies
-        for maneuver in body.list_maneuvers
+        maneuver.activated_at
+        for maneuver in spacecraft.list_maneuvers
+        if maneuver.activated_at is not None
     ]
 
     print()
     print(format_tracking_report(samples[::6], maneuver_times))
+
+
+def _spacecraft(scenario):
+    """The body that carries manoeuvres -- the one the reference tracks."""
+    for body in scenario.bodies:
+        if body.list_maneuvers:
+            return body
+    raise ValueError(f"Scenario {scenario.name!r} has no body with manoeuvres")
 
 
 if __name__ == "__main__":

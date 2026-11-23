@@ -11,8 +11,13 @@ Sekunde. Bezugsebene ist die Ekliptik zu J2000, was der x-y-Ebene der
 Simulation entspricht.
 
 Abrufe werden auf Platte zwischengespeichert. Tests und der Normalbetrieb
-laufen aus dem Cache und brauchen kein Netz; nur `refresh_cache` geht
+laufen aus dem Cache und brauchen kein Netz; nur `fetch_vectors` geht
 tatsächlich online.
+
+Nicht jeder Cache lässt sich derzeit aus dem Repository heraus neu erzeugen:
+`detect_maneuvers.py` schreibt den Manöver-Cache, für die Startzustände und
+die Referenzbahnen (`*_initial_state`, `*_truth`, `*_truth_fine`) gibt es
+kein Skript mehr. Ein Abrufbefehl dafür ist WI-015 in docs/work-items.md.
 """
 
 import json
@@ -139,7 +144,9 @@ def load_cache(name):
     path = cache_path(name)
     if not os.path.exists(path):
         raise HorizonsError(
-            f"Kein Cache namens {name!r}. Mit 'python -m data.horizons' neu holen."
+            f"Kein Cache namens {name!r} in {CACHE_DIR}. Ein Abrufbefehl fehlt "
+            f"noch (WI-015 in docs/work-items.md); Manöver-Caches erzeugt "
+            f"detect_maneuvers.py."
         )
     with open(path, encoding="utf-8") as handle:
         return json.load(handle)

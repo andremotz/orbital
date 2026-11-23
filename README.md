@@ -1,4 +1,7 @@
 # orbital
+
+[![CI](https://github.com/andremotz/orbital/actions/workflows/ci.yml/badge.svg)](https://github.com/andremotz/orbital/actions/workflows/ci.yml)
+
 Orbital, a N-Body Gravitation simulator
 
 It was the Indian Space Agency’s Chandrayaan-2 mission that another time picked up my interest: If you have seen their impressive trans moon injection-manoeuvres you get the idea how impressive and interesting such mission-planning can be.
@@ -8,18 +11,21 @@ It was the Indian Space Agency’s Chandrayaan-2 mission that another time picke
 - N-Bodies: Rocket should rotate around Moon, Moon should rotate around Earth, Earth should rotate around Sun
 - Correct Runge-Kutta 4th order, integrating all bodies simultaneously (verified 4th order convergence)
 - 3D state vectors, so inclined orbits are representable — the Moon's orbit carries its real 5.145° tilt against the ecliptic
-- Rust kernel via PyO3 for the RK4 step, kept bit-identical to the Python path by parity tests (measured ~7.4x speedup on 4 bodies)
+- Rust kernel via PyO3 for the RK4 step, held to the Python path by parity tests — agreement to 1e-12 relative for one step and 1e-9 over 5,000 steps, not bit-identical, since the summation order differs. The step itself is 5.7x faster (about 15x with J2); a full Chandrayaan-2 run gains only 1.8x, because the manoeuvre logic stays in Python — see [RUST_INTEGRATION.md](RUST_INTEGRATION.md)
 - Mission- & object-data moved from source-code to external JSON config (`data/scenarios/`)
 - NASA Horizons integration — real initial states, and Chandrayaan-2's actually flown trajectory as ground truth
 - Burn profile derived *from* that trajectory: propagating ballistically between ephemeris samples and booking the unexplained velocity change as Δv recovers all six published ISRO manoeuvres to within minutes
 - Earth's J2 oblateness, and standard gravitational parameters (GM) instead of mass × G
 - Verification in layers: analytic kernel checks, mission milestones, and tracking against the real trajectory
 
-## in progress
-- Implement simple UI “Cockpit” for zoom & focus-control, visualise interesting data like individual distances, polar-coordinates
-- Visualise several interesting cases, eg. Chandrayaan-2, Apollo 13, Voyager 1/2, …
-
 ## backlog/nice to have
+
+The full backlog, with acceptance criteria, is in
+[docs/work-items.md](docs/work-items.md); the decisions behind the design are
+in [docs/adr/](docs/adr/README.md).
+
+- a simple “cockpit” UI for zoom and focus control, showing data such as individual distances and polar coordinates — not started
+- more missions, e.g. Apollo 13, Voyager 1/2
 - Artemis II still replays measured Δv; giving it the same targeting treatment should close its remaining 1.4 %
 - the captured lunar orbit is 16,445 × 17,878 km against the 114 × 18,072 km actually achieved — the capture works, the descent to a low orbit is not modelled
 - more perturbations: the other planets, solar radiation pressure, higher terms of Earth's gravity field. A few m/s per perigee pass are still unaccounted for.
@@ -61,8 +67,8 @@ what tells an artefact from a burn.
 
 ![Targeting against replay](docs/figures/trigger_effect.png)
 
-Replaying the Δv that was measured on the flown trajectory leaves the apogee
-stalled at 95,000 km (red). Letting each burn name a target apoapsis and solve
+Replaying the Δv that was measured on the flown trajectory, at the planned
+times, leaves the apogee stalled at about 94,000 km (red). Letting each burn name a target apoapsis and solve
 for its own Δv at ignition tracks the real climb all the way through the
 trans-lunar injection (green against blue).
 
@@ -109,8 +115,8 @@ fly a mission*.
 
 ## how well does it actually work?
 
-`python verification.py` compares a run against the real Chandrayaan-2
-trajectory from JPL Horizons. Starting from real initial states, the purely
+`python verification.py chandrayaan2` compares a run against the real
+Chandrayaan-2 trajectory from JPL Horizons. Starting from real initial states, the purely
 ballistic phase tracks reality to **545 km after three days** — on a trajectory
 that swings between 6,550 and 51,500 km altitude.
 
@@ -119,18 +125,41 @@ has fired yet, so the only thing being measured is the physics.
 
 After the burns start, the run no longer tracks the recorded trajectory point
 for point — it flies its own to the same target orbits, and arrives. Telling
-those two questions apart is exactly what the layered verification is for. The
-older behaviour, where a replayed Δv left the apogee stalled at 61,000 km
-against a real 148,000 km, is what motivated the targeting above.
+those two questions apart is exactly what the layered verification is for. What
+motivated the targeting above was the earlier, open-loop profile (commit
+`7af1626`): nine burns replayed at fixed absolute times, which left the apogee
+near 61,000 km while the real one climbed to 148,000 km. The replay in the
+figure above is a different run, of today's six-burn profile, and stalls at
+about 94,000 km; either way only targeting closes the gap.
 
 ## running it
 
+Python 3.10 or newer. In a virtual environment:
+
 ```bash
-python -m unittest discover tests   # full test suite
-python verification.py              # mission verification report
-./build_rust_kernel.sh              # optional: build the Rust kernel
-python main_matplotlib.py           # matplotlib visualisation
+pip install -e ".[dev]"             # numpy, matplotlib, scipy, pygame
 ```
+
+Only numpy is needed for the simulation and the test suite; the extras are
+`viz` (matplotlib — viewers, figures, animations), `pygame`, and `targeting`
+(scipy). Animations also need `ffmpeg` on the PATH. The install only pulls in
+dependencies — the scripts run from the checkout.
+
+```bash
+python -m unittest discover tests        # full test suite
+python verification.py chandrayaan2      # mission verification report (one scenario;
+                                         #   without an argument, the first alphabetically)
+./build_rust_kernel.sh                   # optional: build the Rust kernel
+python main_matplotlib.py                # matplotlib visualisation
+python targeting.py chandrayaan2         # search the TLI target (needs scipy; --apply writes it)
+python detect_maneuvers.py               # derive Chandrayaan-2's burns from Horizons (online)
+python make_figures.py                   # regenerate docs/figures/
+python make_animations.py                # regenerate docs/animations/ (needs ffmpeg)
+```
+
+The Rust kernel needs a Rust toolchain. `targeting.py` and
+`verification.py` use it when it is built and fall back to Python otherwise;
+see [RUST_INTEGRATION.md](RUST_INTEGRATION.md).
 
 Simulation data lives in `data/scenarios/*.json` — all SI units, with sources
 and known limitations recorded alongside the values.

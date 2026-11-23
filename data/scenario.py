@@ -5,8 +5,9 @@ geplanten Manöver und -- optional -- historische Meilensteine, an denen sich
 der Lauf messen lassen muss.
 
 Alle Werte sind SI-Einheiten: Meter, Meter pro Sekunde, Kilogramm, Sekunden,
-Newton. Positionen und Geschwindigkeiten sind zweidimensional in der
-Bahnebene, weil die Simulation in 2D rechnet.
+Newton. Positionen und Geschwindigkeiten sind dreidimensional in der
+Ekliptik zu J2000; zweikomponentige Angaben werden mit z = 0 aufgefüllt.
+Das vollständige Format beschreibt docs/specs/scenario-format.md.
 
 Körper dürfen sich über `relative_to` auf einen anderen Körper beziehen; ihre
 Angaben werden dann als Versatz zu dessen Zustand verstanden. So bleibt etwa
@@ -42,8 +43,9 @@ class Milestone:
     `status` trennt zwei grundverschiedene Ansprüche:
     "verified"     -- das Szenario soll diesen Punkt treffen, Abweichung ist ein Fehler.
     "aspirational" -- historisch belegtes Ziel, das das Modell derzeit nicht
-                      erreicht (etwa weil es in 2D rechnet). Wird berichtet,
-                      aber nicht als Testfehler gewertet.
+                      erreicht (etwa weil eine Störung oder ein Manöver
+                      fehlt). Wird berichtet, aber nicht als Testfehler
+                      gewertet.
     """
 
     VALID_STATUS = ("verified", "aspirational")

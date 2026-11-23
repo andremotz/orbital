@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "orbital"
+version = "0.1.0"
+description = "N-body simulator that flies real lunar missions against JPL Horizons ephemerides"
+readme = "README.md"
+license-files = ["LICENSE"]
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=1.21",
+]
+
+[project.optional-dependencies]
+# matplotlib viewers, make_figures.py and make_animations.py
+# (animations additionally need ffmpeg on the PATH)
+viz = ["matplotlib>=3.5"]
+# the pygame viewers main.py and main_rust_accelerated.py
+pygame = ["pygame>=2.0"]
+# the target search in targeting.py
+targeting = ["scipy>=1.11"]
+# everything needed to run every script and the test suite
+dev = ["orbital[viz,pygame,targeting]"]
+
+[project.urls]
+Repository = "https://github.com/andremotz/orbital"
+
+# The code is not packaged yet: it runs from the checkout, and its top-level
+# packages (`data`, `models`, ...) are too generic to install into
+# site-packages. Until the package layout lands (docs/work-items.md, WI-005)
+# this file only declares metadata and dependencies, and installing it
+# installs nothing but those.
+[tool.setuptools]
+packages = []
+py-modules = []

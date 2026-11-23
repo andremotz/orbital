@@ -1,7 +1,4 @@
-numpy>=1.21.0
-pygame>=2.0.0
-matplotlib>=3.5.0
-
-# Nur fuer die Zielsuche in targeting.py; Simulation und Tests
-# laufen ohne scipy.
-scipy>=1.11
+# Dependencies are declared in pyproject.toml. This file stays so that
+# `pip install -r requirements.txt` keeps working; it installs everything
+# needed for every script and the test suite.
+-e .[dev]
