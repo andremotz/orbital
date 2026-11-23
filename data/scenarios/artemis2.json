@@ -133,7 +133,8 @@
       ],
       "detected_at": "2026-Apr-02 03:00",
       "coherence": 1.0,
-      "note": "Frueher Korrekturschub nach ICPS-Trennung"
+      "note": "Frueher Korrekturschub nach ICPS-Trennung",
+      "label": "TCM-1"
     },
     {
       "body": "Artemis II",
@@ -148,7 +149,8 @@
       ],
       "detected_at": "2026-Apr-02 03:20",
       "coherence": 1.0,
-      "note": "Frueher Korrekturschub nach ICPS-Trennung"
+      "note": "Frueher Korrekturschub nach ICPS-Trennung",
+      "label": "TCM-2"
     },
     {
       "body": "Artemis II",
@@ -163,7 +165,8 @@
       ],
       "detected_at": "2026-Apr-02 12:00",
       "coherence": 1.0,
-      "note": "Perigaeumsanhebung (NASA: 2.4. 11:30)"
+      "note": "Perigaeumsanhebung (NASA: 2.4. 11:30)",
+      "label": "perigee raise"
     },
     {
       "body": "Artemis II",
@@ -183,7 +186,8 @@
         "type": "periapsis",
         "reference": "Earth",
         "after": 72000.0
-      }
+      },
+      "label": "TLI"
     },
     {
       "body": "Artemis II",
@@ -198,7 +202,8 @@
       ],
       "detected_at": "2026-Apr-06 03:00",
       "coherence": 1.0,
-      "note": "Bahnkorrektur OTC-3 (NASA: 6.4. 03:03, 3 m/s)"
+      "note": "Bahnkorrektur OTC-3 (NASA: 6.4. 03:03, 3 m/s)",
+      "label": "OTC-3"
     },
     {
       "body": "Artemis II",
@@ -213,7 +218,8 @@
       ],
       "detected_at": "2026-Apr-07 10:00",
       "coherence": 1.0,
-      "note": "Bahnkorrektur auf dem Rueckweg"
+      "note": "Bahnkorrektur auf dem Rueckweg",
+      "label": "return TCM"
     }
   ],
   "milestones": [

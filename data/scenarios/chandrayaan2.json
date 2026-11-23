@@ -136,7 +136,8 @@
       "planned_at": 293400.0,
       "measured_delta_v": 97.107,
       "target_apoapsis": 61110200.0,
-      "target_reference": "Earth"
+      "target_reference": "Earth",
+      "label": "EBN#2"
     },
     {
       "body": "Chandrayaan-2",
@@ -152,7 +153,8 @@
       "planned_at": 603600.0,
       "measured_delta_v": 109.623,
       "target_apoapsis": 77928200.0,
-      "target_reference": "Earth"
+      "target_reference": "Earth",
+      "label": "EBN#3"
     },
     {
       "body": "Chandrayaan-2",
@@ -168,7 +170,8 @@
       "planned_at": 949800.0,
       "measured_delta_v": 74.225,
       "target_apoapsis": 95426600.0,
-      "target_reference": "Earth"
+      "target_reference": "Earth",
+      "label": "EBN#4"
     },
     {
       "body": "Chandrayaan-2",
@@ -184,7 +187,8 @@
       "planned_at": 1294200.0,
       "measured_delta_v": 125.565,
       "target_apoapsis": 148648900.0,
-      "target_reference": "Earth"
+      "target_reference": "Earth",
+      "label": "EBN#5"
     },
     {
       "body": "Chandrayaan-2",
@@ -201,7 +205,8 @@
       "measured_delta_v": 148.678,
       "target_apoapsis": 479872623.0,
       "target_reference": "Earth",
-      "target_source": "Aus einer Zielsuche auf die dichteste Mondannäherung, nicht aus der geflogenen Bahn gemessen -- siehe targeting.py"
+      "target_source": "Aus einer Zielsuche auf die dichteste Mondannäherung, nicht aus der geflogenen Bahn gemessen -- siehe targeting.py",
+      "label": "TLI"
     },
     {
       "body": "Chandrayaan-2",
@@ -216,7 +221,8 @@
         "after": 2200000.0
       },
       "target_apoapsis": 18072000.0,
-      "target_reference": "Moon"
+      "target_reference": "Moon",
+      "label": "LOI"
     }
   ],
   "milestones": [

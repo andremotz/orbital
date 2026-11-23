@@ -38,6 +38,7 @@ class Maneuver:
 
     def __init__(self, time_start=None, time_duration=None, force=None,
                  direction=None, relative_to=None, delta_v=None, trigger=None,
+                 label=None,
                  target_apoapsis=None, target_reference=None):
         given = [value is not None for value in (force, delta_v, target_apoapsis)]
         if sum(given) != 1:
@@ -64,6 +65,8 @@ class Maneuver:
         self.target_reference = target_reference or relative_to
         self.direction = _as_vector(direction)
         self.relative_to = relative_to
+        # Kurzname fuer Anzeigen; die Notiz im Szenario ist dafuer zu lang
+        self.label = label
 
         # Ohne Auslöser zündet das Manöver zur festen Zeit; mit Auslöser wird
         # der Zündzeitpunkt erst im Lauf bestimmt und hier festgehalten.

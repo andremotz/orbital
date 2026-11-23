@@ -1,0 +1,217 @@
+{
+  "name": "Cassini-Huygens (Reisephase)",
+  "description": "Die Reise von der Erde zum Saturn, 15. Oktober 1997 bis 1. Juli 2004. Die Bahn lebt von vier Schwerkraftmanoevern: zweimal Venus, einmal Erde, einmal Jupiter. Modelliert wird hier die Reisephase rein ballistisch, um zu messen, wie lange das Modell einer interplanetaren Bahn folgt.",
+  "epoch": "1997-10-16T00:00:00 TDB",
+  "time_step": 3600,
+  "source": "Startzustaende und Referenzbahn aus JPL Horizons (-82)",
+  "provenance": {
+    "initial_state": "JPL Horizons -82, kurz nach dem Start am 15. Oktober 1997",
+    "frame": "Ekliptik J2000, Schwerpunkt des Sonnensystems",
+    "maneuvers": "Keine. Dieses Szenario prueft die Modellguete, nicht die Missionsplanung."
+  },
+  "limitations": [
+    "Gemessen: bis zum ersten Venus-Vorbeiflug folgt das Modell der realen Bahn 190 Tage lang auf 0,08 Prozent genau. Der Vorbeiflug selbst verstaerkt den Fehler dann um den Faktor 46, von 87.600 auf 4,06 Millionen Kilometer binnen zehn Tagen. Genau das ist der Grund, warum eine Zielsteuerung fuer eine Vorbeiflugkette nicht mit denselben Mitteln zu haben ist wie der Mondtransfer.",
+    "Rein ballistisch: die Deep-Space-Manoever sind nicht modelliert, insbesondere DSM-1 vom Dezember 1998 mit rund 450 m/s. Die Bahn kann der realen also nur bis dorthin folgen.",
+    "Nicht modelliert sind Strahlungsdruck, der ueber sieben Jahre erheblich wird, sowie Merkur, Uranus und Neptun.",
+    "Die Riesenplaneten gehen mit dem GM ihres gesamten Systems ein, ihre Monde werden nicht einzeln gefuehrt.",
+    "Die Vorbeifluege sind chaotisch empfindlich: wenige m/s an der Venus werden am Saturn zu Millionen Kilometern. Eine Zielsteuerung fuer diese Kette ist nicht Teil des Projekts.",
+    "Kein Meilenstein hinterlegt: das Meilenstein-Werkzeug misst Abstaende zwischen zwei Koerpern, die Referenzbahn ist aber auf den Schwerpunkt des Sonnensystems bezogen, der in der Simulation kein Koerper ist. Die Guete wird stattdessen direkt als Ortsfehler gegen die Ephemeride gemessen, siehe tests/test_cruise.py."
+  ],
+  "bodies": [
+    {
+      "name": "Sun",
+      "mu": 1.3271244004127942e+20,
+      "mass": 1.988409871316534e+30,
+      "radius": 696342000.0,
+      "color": [
+        255,
+        255,
+        0
+      ],
+      "is_heavy": true,
+      "location": [
+        -1149471726.98163,
+        620341691.1846633,
+        28206833.21903239
+      ],
+      "velocity": [
+        -6.880720327111483,
+        -13.6294072646258,
+        0.2291412840642682
+      ],
+      "source": "JPL Horizons DE441, GM aus DE440"
+    },
+    {
+      "name": "Venus",
+      "mu": 324858592000000.0,
+      "mass": 4.867305814842006e+24,
+      "radius": 6051800.0,
+      "color": [
+        230,
+        200,
+        150
+      ],
+      "is_heavy": true,
+      "location": [
+        91082553338.8712,
+        -56981731755.272705,
+        -6082545786.000554
+      ],
+      "velocity": [
+        18332.76974588476,
+        29546.698844001243,
+        -654.6961970985841
+      ],
+      "source": "JPL Horizons DE441, GM aus DE440"
+    },
+    {
+      "name": "Earth",
+      "mu": 398600435507000.0,
+      "mass": 5.972168399787245e+24,
+      "radius": 6371000.0,
+      "color": [
+        0,
+        255,
+        255
+      ],
+      "is_heavy": true,
+      "location": [
+        136427590033.89061,
+        58170865287.848625,
+        28963582.65987784
+      ],
+      "velocity": [
+        -11983.00553033882,
+        27343.968557464512,
+        1.443239220190407
+      ],
+      "source": "JPL Horizons DE441, GM aus DE440",
+      "oblateness": {
+        "j2": 0.00108262668,
+        "equatorial_radius": 6378137.0,
+        "pole": [
+          0.0,
+          -0.39777715575399053,
+          0.917482062146321
+        ]
+      }
+    },
+    {
+      "name": "Moon",
+      "mu": 4902800019630.0,
+      "mass": 7.345789100924442e+22,
+      "radius": 1737400.0,
+      "color": [
+        200,
+        200,
+        200
+      ],
+      "is_heavy": true,
+      "location": [
+        136764108819.15509,
+        58296576524.00245,
+        12091474.79576617
+      ],
+      "velocity": [
+        -12350.60081089827,
+        28372.01201971785,
+        -84.59156480398633
+      ],
+      "source": "JPL Horizons DE441, GM aus DE440"
+    },
+    {
+      "name": "Mars",
+      "mu": 42828373620000.0,
+      "mass": 6.416908682558471e+23,
+      "radius": 3389500.0,
+      "color": [
+        220,
+        120,
+        90
+      ],
+      "is_heavy": true,
+      "location": [
+        51324073381.987274,
+        -206372764200.6949,
+        -5597829701.29545
+      ],
+      "velocity": [
+        24397.1464207821,
+        8022.223447446606,
+        -431.3852534769858
+      ],
+      "source": "JPL Horizons DE441, GM aus DE440"
+    },
+    {
+      "name": "Jupiter",
+      "mu": 1.267127641e+17,
+      "mass": 1.8985176587806962e+27,
+      "radius": 69911000.0,
+      "color": [
+        220,
+        180,
+        140
+      ],
+      "is_heavy": true,
+      "location": [
+        600943896825.0349,
+        -453646636194.74414,
+        -11575487035.6338
+      ],
+      "velocity": [
+        7695.476900966525,
+        11038.740205277049,
+        -218.01319981468438
+      ],
+      "source": "JPL Horizons DE441, GM aus DE440"
+    },
+    {
+      "name": "Saturn",
+      "mu": 3.794058484e+16,
+      "mass": 5.684578883178761e+26,
+      "radius": 58232000.0,
+      "color": [
+        230,
+        210,
+        160
+      ],
+      "is_heavy": true,
+      "location": [
+        1339706366331.821,
+        414097845043.8004,
+        -60481692532.33142
+      ],
+      "velocity": [
+        -3363.453824219352,
+        9210.422003857442,
+        -26.81988040534922
+      ],
+      "source": "JPL Horizons DE441, GM aus DE440"
+    },
+    {
+      "name": "Cassini",
+      "mass": 5712,
+      "radius": 10,
+      "color": [
+        255,
+        128,
+        0
+      ],
+      "is_heavy": false,
+      "location": [
+        136653678889.23651,
+        58039145490.438286,
+        63787300.7549569
+      ],
+      "velocity": [
+        -8052.795012037761,
+        25390.92811369589,
+        626.7550327435281
+      ],
+      "source": "JPL Horizons -82",
+      "note": "Startmasse mit Huygens und Treibstoff rund 5712 kg. Die Masse spielt hier keine Rolle, weil rein ballistisch gerechnet wird."
+    }
+  ],
+  "maneuvers": [],
+  "milestones": []
+}

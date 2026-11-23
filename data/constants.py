@@ -14,6 +14,15 @@ GM_SUN = 1.32712440041279419e20
 GM_EARTH = 3.98600435507e14
 GM_MOON = 4.90280001963e12
 
+# Für interplanetare Bahnen. Bei den Riesenplaneten ist es der Wert des
+# jeweiligen Systems, also samt Monden -- deren Bahnen werden hier nicht
+# einzeln geführt, und aus der Ferne wirkt ohnehin nur die Summe.
+GM_VENUS = 3.24858592e14
+GM_MARS_SYSTEM = 4.282837362e13
+GM_JUPITER_SYSTEM = 1.267127641e17
+GM_SATURN_SYSTEM = 3.794058484e16
+GM_TITAN = 8.978138376e12
+
 # Zustände werden dreikomponentig geführt. Die Simulation rechnete früher in
 # der Ebene; das schloss reale Bahnen aus, weil etwa die Mondbahn rund 5,1
 # Grad gegen die Ekliptik geneigt ist und ein Mondtransfer damit zwingend
