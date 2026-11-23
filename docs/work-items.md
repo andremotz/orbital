@@ -1,7 +1,7 @@
 # Work items
 
-Backlog as of 2026-11-22. WI-002 (`pyproject.toml`) and WI-003 (statements
-that were no longer true) are done. Items are ordered by
+Backlog as of 2026-11-23. WI-001 (CI), WI-002 (`pyproject.toml`) and WI-003
+(statements that were no longer true) are done. Items are ordered by
 priority within each group. Sizes: **S** ≤ half a day, **M** 1–2 days,
 **L** more.
 
@@ -12,10 +12,9 @@ ID.
 | ID | Title | Size | Depends on |
 |---|---|---|---|
 | **Now — foundations** | | | |
-| [WI-001](#wi-001-continuous-integration) | Continuous integration | S | – |
 | [WI-004](#wi-004-linting-and-formatting) | Linting and formatting | S | – |
 | **Next — structure** | | | |
-| [WI-005](#wi-005-package-layout-and-maturin-build) | Package layout and maturin build | L | WI-001 |
+| [WI-005](#wi-005-package-layout-and-maturin-build) | Package layout and maturin build | L | – |
 | [WI-006](#wi-006-single-cli-remove-duplicate-entry-points) | Single CLI, remove duplicate entry points | M | WI-005 |
 | [WI-007](#wi-007-simulation-run-object) | `Simulation` run object | L | WI-005 |
 | [WI-008](#wi-008-no-silent-backend-fallback-no-prints-in-library-code) | No silent backend fallback, no prints in library code | S | – |
@@ -39,34 +38,10 @@ ID.
 
 ## Now — foundations
 
-### WI-001: Continuous integration
-
-**Status.** Implemented in `.github/workflows/ci.yml`; every step was
-reproduced locally in a fresh clone. Stays open until the first run on GitHub
-is green and the J2 check below has been seen to turn it red there.
-
-**Why.** There is no CI. On a fresh clone the 9 Rust parity tests are skipped,
-so the Rust path — the one `targeting.py` and `verification.py` use by
-default — is unverified unless someone builds the kernel locally. A `verified`
-milestone "fails the build" only if there is a build.
-
-**What.** GitHub Actions workflow on push and pull request:
-
-- `python`: Python 3.10 – 3.14 on Linux plus 3.14 on macOS, with only numpy
-  installed, `python -m unittest discover tests`;
-- `rust`: Python 3.10 and 3.14 on Linux plus 3.14 on macOS — `cargo fmt
-  --check`, `cargo clippy -- -D warnings`, build the kernel, run the suite
-  with `ORBITAL_REQUIRE_RUST=1` (a skipped parity test is a failure), then
-  `python verification.py` for every scenario on the Rust path.
-
-**Acceptance.** A pull request shows both jobs; deliberately breaking the J2
-term in `lib.rs` turns `rust` red (locally confirmed: J2 × 1.01 puts the
-parity satellite 5 km off). README has a status badge.
-
 ### WI-004: Linting and formatting
 
 **What.** `ruff` (lint + format) configured in `pyproject.toml`, run in CI.
-(`rustfmt` and `clippy` already run, see WI-001.) Optional `pre-commit` config. Fix what
+(`rustfmt` and `clippy` already run in CI.) Optional `pre-commit` config. Fix what
 it finds (trailing whitespace, missing final newlines, unused imports such as
 `CONST_GRAVITY` in `physics/gravity.py`).
 
@@ -352,7 +327,7 @@ every front end, with no non-finite states.
   README and in `pyproject.toml`/`Cargo.toml`.
 - **CONTRIBUTING.md**: setup, how to run the layers of verification, how to
   add a scenario, commit conventions, the ADR/spec/work-item workflow.
-- **CHANGELOG.md** and a first tag (`v0.1.0`) once WI-001–WI-003 are in.
+- **CHANGELOG.md** and a first tag (`v0.1.0`) now that WI-001–WI-003 are in.
 - **CITATION / data attribution**: JPL Horizons and DE440/441 as data sources.
 - **README**: put result and animation first, setup second, the derivations
   after; link to `docs/`.
