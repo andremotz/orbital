@@ -23,8 +23,8 @@ from data.constants import DIMENSIONS
 from models.maneuver import Maneuver
 from models.massive_object import DEFAULT_HISTORY_LENGTH, MassiveObject
 from models.oblateness import Oblateness
-from models.trigger import PeriapsisTrigger, trigger_from_config
 from models.state import State
+from models.trigger import PeriapsisTrigger, trigger_from_config
 
 SCENARIO_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "scenarios")
 
@@ -138,8 +138,8 @@ def _vector(raw, context):
         )
     try:
         components = [float(value) for value in raw]
-    except (TypeError, ValueError):
-        raise ScenarioError(f"{context}: Vektor {raw!r} ist nicht numerisch")
+    except (TypeError, ValueError) as error:
+        raise ScenarioError(f"{context}: Vektor {raw!r} ist nicht numerisch") from error
 
     components += [0.0] * (DIMENSIONS - len(components))
     return np.array(components)

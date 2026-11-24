@@ -1,6 +1,3 @@
-import numpy as np
-
-
 class State:
     """Klasse repräsentiert einen Zustand eines Körpers"""
 

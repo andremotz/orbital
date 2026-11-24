@@ -1,14 +1,16 @@
-import pygame
-from collections import defaultdict
 import time
+from collections import defaultdict
+
+import pygame
+
+from data.celestial_objects import get_massive_objects
 
 # Import der modularen Komponenten
-from data.constants import WIDTH, HEIGHT
-from data.celestial_objects import get_massive_objects
+from data.constants import HEIGHT, WIDTH
 from rendering.renderer import pygame_draw
 
 # Import des Rust-Kernels
-from rust_integration import RustAcceleratedIntegrator, PerformanceBenchmark
+from rust_integration import PerformanceBenchmark, RustAcceleratedIntegrator
 
 
 def main():
@@ -46,7 +48,6 @@ def main():
     print("   Drücke 'r' für Rust/Python-Umschaltung")
 
     while running:
-        frame_start = time.time()
         frame_count += 1
 
         # Berechne neue Zustände für alle Objekte mit Rust-Kernel
@@ -90,9 +91,7 @@ def main():
         if keysPressed[pygame.K_b]:
             print("\n🔬 Führe Performance-Benchmark durch...")
             benchmark = PerformanceBenchmark()
-            results = benchmark.benchmark_simulation(
-                list_massiveobjects, time_steps=1000
-            )
+            benchmark.benchmark_simulation(list_massiveobjects, time_steps=1000)
             keysPressed[pygame.K_b] = False  # Verhindere wiederholte Ausführung
 
         if keysPressed[pygame.K_r]:
@@ -133,15 +132,13 @@ def benchmark_mode():
     benchmark = PerformanceBenchmark()
 
     print("\n📊 Benchmark 1: Standard-Simulation (1000 Schritte)")
-    results1 = benchmark.benchmark_simulation(list_massiveobjects, time_steps=1000)
+    benchmark.benchmark_simulation(list_massiveobjects, time_steps=1000)
 
     print("\n📊 Benchmark 2: Lange Simulation (10000 Schritte)")
-    results2 = benchmark.benchmark_simulation(list_massiveobjects, time_steps=10000)
+    benchmark.benchmark_simulation(list_massiveobjects, time_steps=10000)
 
     print("\n📊 Benchmark 3: Hohe Frequenz (10000 Schritte, 1s Zeitschritt)")
-    results3 = benchmark.benchmark_simulation(
-        list_massiveobjects, time_steps=10000, time_step=1.0
-    )
+    benchmark.benchmark_simulation(list_massiveobjects, time_steps=10000, time_step=1.0)
 
     print("\n✅ Benchmark abgeschlossen!")
     print("   Verwende 'python main_rust_accelerated.py' für die normale Simulation")

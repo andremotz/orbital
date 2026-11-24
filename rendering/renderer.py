@@ -1,5 +1,7 @@
 import pygame
-from data.constants import WIDTHD2, HEIGHTD2
+
+from data.constants import HEIGHTD2, WIDTHD2
+
 from .utils import calc_days_from_time
 
 
@@ -44,6 +46,5 @@ def pygame_draw(listMassiveObjects, surface, zoom, scroll_x, scroll_y, time):
 
     pygame.display.flip()
     pygame.display.set_caption(
-        "days: %s, zoom: %s, time %s"
-        % (calc_days_from_time(time), round(zoom, 20), time)
+        f"days: {calc_days_from_time(time)}, zoom: {round(zoom, 20)}, time {time}"
     )

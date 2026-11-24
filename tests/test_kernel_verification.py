@@ -23,7 +23,6 @@ import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from data.constants import CONST_GRAVITY
-from physics.integrator import step
 from tests.test_physics import advance, make_object
 
 MASS_SUN = 1.989e30

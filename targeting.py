@@ -182,7 +182,7 @@ def main(argv=None):
     print()
     print(f"  Ziel-Apogäum      {target / 1e3:,.0f} km")
     print(f"  Mondannäherung    {distance / 1e3:,.0f} km bei Tag {moment / 86400:.2f}")
-    print(f"  Hill-Radius Mond  61,524 km")
+    print("  Hill-Radius Mond  61,524 km")
 
     if args.apply:
         apply_to_scenario(

@@ -3,8 +3,6 @@ Rust-optimierte Trail-Verarbeitung für die Orbital-Simulation
 Beschleunigt die intelligente Trail-Thinning-Algorithmen
 """
 
-import numpy as np
-from typing import List, Tuple, Deque
 from collections import deque
 
 # Versuche den Rust-Kernel zu importieren
@@ -27,13 +25,13 @@ class RustTrailOptimizer:
         self.trail_buffers = {}
         self.trails = {}
 
-    def initialize_trails(self, object_names: List[str], trail_length: int = 1000):
+    def initialize_trails(self, object_names: list[str], trail_length: int = 1000):
         """Initialisiert Trail-Speicher für alle Objekte"""
         for name in object_names:
             self.trails[name] = deque(maxlen=trail_length)
             self.trail_buffers[name] = []
 
-    def add_position_to_buffer(self, obj_name: str, position: Tuple[float, float]):
+    def add_position_to_buffer(self, obj_name: str, position: tuple[float, float]):
         """Fügt eine Position zum Trail-Buffer hinzu"""
         self.trail_buffers[obj_name].append(position)
 
@@ -53,7 +51,7 @@ class RustTrailOptimizer:
         """Rust-beschleunigte Trail-Verarbeitung"""
         try:
             # Konvertiere Trail-Buffer zu NumPy-Arrays für Rust
-            for obj_name, buffer in self.trail_buffers.items():
+            for buffer in self.trail_buffers.values():
                 if not buffer:
                     continue
 
@@ -61,9 +59,6 @@ class RustTrailOptimizer:
                 sample_rate = self._calculate_sample_rate(simulation_speed)
 
                 if len(buffer) >= sample_rate:
-                    # Konvertiere zu NumPy-Array
-                    positions = np.array(buffer, dtype=np.float64)
-
                     # Führe intelligente Thinning in Rust durch
                     # (Hier würde eine Rust-Funktion für Trail-Thinning aufgerufen werden)
                     # Für jetzt verwenden wir Python-Implementierung als Fallback
@@ -141,7 +136,7 @@ class RustTrailOptimizer:
                     self.trails[obj_name].append(position)
                 buffer.clear()
 
-    def get_trail_data(self, obj_name: str) -> List[Tuple[float, float]]:
+    def get_trail_data(self, obj_name: str) -> list[tuple[float, float]]:
         """Gibt Trail-Daten für ein Objekt zurück"""
         return list(self.trails.get(obj_name, []))
 
@@ -195,7 +190,7 @@ class OptimizedRustOrbitVisualizer:
         self.base_visualizer.reset_simulation = enhanced_reset
 
     def _optimized_update_trail_intelligent(
-        self, obj_name: str, position: Tuple[float, float]
+        self, obj_name: str, position: tuple[float, float]
     ):
         """Optimierte Trail-Update-Methode"""
         self.trail_optimizer.add_position_to_buffer(obj_name, position)

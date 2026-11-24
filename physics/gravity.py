@@ -1,5 +1,6 @@
 import numpy as np
-from data.constants import CONST_GRAVITY, DIMENSIONS
+
+from data.constants import DIMENSIONS
 
 
 def accelerations(positions, mus):

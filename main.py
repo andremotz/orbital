@@ -1,9 +1,11 @@
-import pygame
 from collections import defaultdict
 
-# Import der modularen Komponenten
-from data.constants import WIDTH, HEIGHT
+import pygame
+
 from data.celestial_objects import get_massive_objects
+
+# Import der modularen Komponenten
+from data.constants import HEIGHT, WIDTH
 from physics.integrator import step
 from rendering.renderer import pygame_draw
 

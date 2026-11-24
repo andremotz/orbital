@@ -10,6 +10,8 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from data.constants import GM_EARTH
+from data.horizons import load_cache
 from data.scenario import (
     ScenarioError,
     available_scenarios,
@@ -18,8 +20,6 @@ from data.scenario import (
 )
 from physics.mission import get_mission_acceleration
 from tests.test_physics import make_object
-from data.constants import GM_EARTH
-from data.horizons import load_cache
 from verification import (
     find_collision,
     format_report,

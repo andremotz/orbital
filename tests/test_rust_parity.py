@@ -294,8 +294,9 @@ class TestRustKernelContract(unittest.TestCase):
             objects, 0.0
         )
 
-        # Jede zweite Zeile -- der zugrundeliegende Speicher ist nicht mehr zusammenhängend
-        with self.assertRaises(Exception):
+        # Jede zweite Zeile -- der zugrundeliegende Speicher ist nicht mehr zusammenhängend.
+        # numpy meldet das als TypeError ("not contiguous or is misaligned").
+        with self.assertRaises(TypeError):
             orbital_rust_kernel.rk4_step_python(
                 mus[::2],
                 positions[::2],

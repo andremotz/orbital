@@ -8,7 +8,6 @@ Implementierungen aufeinander fest.
 """
 
 import time
-from typing import List
 
 import numpy as np
 
@@ -28,7 +27,7 @@ except ImportError as e:
     orbital_rust_kernel = None
 
 
-def gather_arrays(massive_objects: List, time: float):
+def gather_arrays(massive_objects: list, time: float):
     """Sammelt alles, was der Kernel für einen Schritt braucht.
 
     Übergeben wird GM je Körper, nicht die Masse -- siehe die Begründung bei
@@ -73,7 +72,7 @@ class RustAcceleratedIntegrator:
             print("🐍 Verwende Python RK4-Integration")
 
     def calculate_states_batch(
-        self, massive_objects: List, time_step: float, time: float = 0.0
+        self, massive_objects: list, time_step: float, time: float = 0.0
     ) -> None:
         """
         Berechnet neue Zustände für alle Objekte in einem Batch
@@ -100,7 +99,7 @@ class RustAcceleratedIntegrator:
             self._calculate_states_python(massive_objects, time_step, time)
 
     def _calculate_states_python(
-        self, massive_objects: List, time_step: float, time: float = 0.0
+        self, massive_objects: list, time_step: float, time: float = 0.0
     ) -> None:
         """
         Python-Fallback-Implementierung
@@ -118,7 +117,7 @@ class PerformanceBenchmark:
         self.python_integrator = RustAcceleratedIntegrator(use_rust=False)
 
     def benchmark_simulation(
-        self, massive_objects: List, time_steps: int = 1000, time_step: float = 60.0
+        self, massive_objects: list, time_steps: int = 1000, time_step: float = 60.0
     ) -> dict:
         """
         Führt einen Performance-Benchmark durch
@@ -168,7 +167,7 @@ class PerformanceBenchmark:
         return results
 
     def _time_run(
-        self, integrator, massive_objects: List, time_steps: int, time_step: float
+        self, integrator, massive_objects: list, time_steps: int, time_step: float
     ) -> float:
         """Misst einen Lauf auf einer Kopie, damit beide gleich starten."""
         objects = self._copy_objects(massive_objects)
@@ -180,7 +179,7 @@ class PerformanceBenchmark:
             simulation_time += time_step
         return time.perf_counter() - start_time
 
-    def _copy_objects(self, original_objects: List) -> List:
+    def _copy_objects(self, original_objects: list) -> list:
         """
         Erstellt eine unabhängige Kopie der Objekte für Benchmarking
         """

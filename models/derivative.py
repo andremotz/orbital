@@ -1,6 +1,3 @@
-import numpy as np
-
-
 class Derivative:
     """Klasse repräsentiert eine Ableitung eines States"""
 

@@ -55,6 +55,9 @@ select = [
     "B",   # bugbear
 ]
 ignore = [
+    # Line length is the formatter's job. What it leaves long are strings and
+    # comments, which it deliberately does not break.
+    "E501",
     # zip(strict=True) would change behaviour -- a length mismatch would
     # raise instead of truncating. Worth deciding per call, not in a lint pass.
     "B905",

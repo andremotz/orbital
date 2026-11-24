@@ -4,10 +4,9 @@ Test-Script für die Rust-Integration in matplotlib
 Testet die Funktionalität der beschleunigten matplotlib-Version
 """
 
-import sys
 import os
+import sys
 import time
-import numpy as np
 
 # Füge den aktuellen Pfad hinzu
 sys.path.insert(0, os.path.dirname(__file__))
@@ -18,7 +17,7 @@ def test_matplotlib_rust_import():
     print("🧪 Teste Rust-matplotlib Import...")
 
     try:
-        from main_matplotlib_rust import RustOrbitVisualizer
+        from main_matplotlib_rust import RustOrbitVisualizer  # noqa: F401 -- probe
 
         print("✅ Rust-matplotlib-Integration erfolgreich importiert")
         return True
@@ -36,13 +35,13 @@ def test_visualizer_creation():
 
         # Teste beide Modi
         rust_visualizer = RustOrbitVisualizer(use_rust=True)
-        python_visualizer = RustOrbitVisualizer(use_rust=False)
+        RustOrbitVisualizer(use_rust=False)
 
         print("✅ Rust-Visualizer erfolgreich erstellt")
         print(
             f"   Rust-Modus: {'Verfügbar' if rust_visualizer.use_rust else 'Nicht verfügbar'}"
         )
-        print(f"   Python-Modus: Verfügbar")
+        print("   Python-Modus: Verfügbar")
         return True
     except Exception as e:
         print(f"❌ Visualizer-Erstellung fehlgeschlagen: {e}")
@@ -84,8 +83,8 @@ def test_performance_comparison():
     print("\n🧪 Teste Performance-Vergleich...")
 
     try:
-        from main_matplotlib_rust import RustOrbitVisualizer
         from data.celestial_objects import get_massive_objects
+        from main_matplotlib_rust import RustOrbitVisualizer
 
         objects = get_massive_objects()
 

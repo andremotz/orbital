@@ -22,7 +22,6 @@ from data.constants import GM_EARTH
 from data.horizons import load_cache
 from data.scenario import load_named_scenario
 from physics.elements import elements_from_state
-from physics.integrator import step
 from rendering.plotstyle import (
     ACCENT,
     BACKGROUND,

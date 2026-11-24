@@ -4,9 +4,10 @@ Test-Script für die Rust-Integration
 Testet die Funktionalität ohne vollständige Simulation
 """
 
-import sys
 import os
+import sys
 import time
+
 import numpy as np
 
 # Füge den aktuellen Pfad hinzu
@@ -18,7 +19,10 @@ def test_rust_import():
     print("🧪 Teste Rust-Kernel Import...")
 
     try:
-        from rust_integration import RustAcceleratedIntegrator, PerformanceBenchmark
+        from rust_integration import (  # noqa: F401 -- availability probe
+            PerformanceBenchmark,
+            RustAcceleratedIntegrator,
+        )
 
         print("✅ Rust-Integration erfolgreich importiert")
         return True
@@ -38,13 +42,13 @@ def test_integrator_creation():
 
         # Teste beide Modi
         rust_integrator = RustAcceleratedIntegrator(use_rust=True)
-        python_integrator = RustAcceleratedIntegrator(use_rust=False)
+        RustAcceleratedIntegrator(use_rust=False)
 
         print("✅ Integratoren erfolgreich erstellt")
         print(
             f"   Rust-Integrator: {'Verfügbar' if rust_integrator.use_rust else 'Nicht verfügbar'}"
         )
-        print(f"   Python-Integrator: Verfügbar")
+        print("   Python-Integrator: Verfügbar")
         return True
     except Exception as e:
         print(f"❌ Integrator-Erstellung fehlgeschlagen: {e}")
@@ -58,7 +62,7 @@ def test_benchmark_creation():
     try:
         from rust_integration import PerformanceBenchmark
 
-        benchmark = PerformanceBenchmark()
+        PerformanceBenchmark()
         print("✅ Benchmark erfolgreich erstellt")
         return True
     except Exception as e:
@@ -131,8 +135,8 @@ def run_performance_test():
     print("\n🧪 Führe Performance-Test durch...")
 
     try:
-        from rust_integration import RustAcceleratedIntegrator
         from data.celestial_objects import get_massive_objects
+        from rust_integration import RustAcceleratedIntegrator
 
         objects = get_massive_objects()
         integrator = RustAcceleratedIntegrator(use_rust=True)
@@ -146,7 +150,7 @@ def run_performance_test():
         duration = end_time - start_time
         steps_per_second = 100 / duration
 
-        print(f"✅ Performance-Test abgeschlossen")
+        print("✅ Performance-Test abgeschlossen")
         print(f"   100 Schritte in {duration:.3f}s")
         print(f"   {steps_per_second:.1f} Schritte/Sekunde")
 

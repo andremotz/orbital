@@ -1,11 +1,12 @@
-import matplotlib.pyplot as plt
-import matplotlib.animation as animation
-import numpy as np
 from collections import deque
 
-# Import modular components
-from data.constants import WIDTH, HEIGHT
+import matplotlib.animation as animation
+import matplotlib.pyplot as plt
+import numpy as np
+
 from data.celestial_objects import get_massive_objects
+
+# Import modular components
 from physics.integrator import step
 from rendering.utils import out_of_plane_distance, project_to_ecliptic
 

@@ -160,7 +160,7 @@ def format_report(scenario, results, collision=None):
             mark = "OK" if result.within_tolerance else "offen"
 
         lines.append(
-            f"[{mark:6}] {milestone.name}  ({milestone.date or 't=%.0fs' % milestone.time})"
+            f"[{mark:6}] {milestone.name}  ({milestone.date or f't={milestone.time:.0f}s'})"
         )
         lines.append(
             f"           erwartet {milestone.expected_distance / 1e3:14,.1f} km"
