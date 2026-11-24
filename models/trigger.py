@@ -76,8 +76,10 @@ class PeriapsisTrigger(Trigger):
         # Ein Durchgang ist überschritten, wenn die Restzeit springt: kurz
         # davor geht sie gegen null, unmittelbar danach steht wieder ein
         # ganzer Umlauf aus.
-        if (self._previous_remaining is not None
-                and remaining > self._previous_remaining):
+        if (
+            self._previous_remaining is not None
+            and remaining > self._previous_remaining
+        ):
             self._seen += 1
         self._previous_remaining = remaining
 
@@ -93,8 +95,10 @@ class PeriapsisTrigger(Trigger):
 
     def describe(self):
         if self.skip:
-            return (f"{self.skip + 1}. Periapsis um {self.reference} "
-                    f"nach t = {self.after:.0f}s")
+            return (
+                f"{self.skip + 1}. Periapsis um {self.reference} "
+                f"nach t = {self.after:.0f}s"
+            )
         return f"Periapsis um {self.reference} nach t = {self.after:.0f}s"
 
 
@@ -109,8 +113,9 @@ def trigger_from_config(raw, context):
     if kind == "periapsis":
         if "reference" not in raw:
             raise ValueError(f"{context}: 'periapsis' braucht 'reference'")
-        return PeriapsisTrigger(raw["reference"], raw.get("after", 0.0),
-                                raw.get("skip", 0))
+        return PeriapsisTrigger(
+            raw["reference"], raw.get("after", 0.0), raw.get("skip", 0)
+        )
 
     raise ValueError(
         f"{context}: unbekannter Ausloeser {kind!r}, erlaubt sind "

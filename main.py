@@ -1,9 +1,11 @@
-import pygame
 from collections import defaultdict
 
-# Import der modularen Komponenten
-from data.constants import WIDTH, HEIGHT
+import pygame
+
 from data.celestial_objects import get_massive_objects
+
+# Import der modularen Komponenten
+from data.constants import HEIGHT, WIDTH
 from physics.integrator import step
 from rendering.renderer import pygame_draw
 
@@ -14,10 +16,12 @@ def main():
     pygame.init()
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
     running = True
-    
-    #zoom = (10**-9) / 0.85 / 0.85 / 0.85 / 0.85 / 0.85 / 0.85 # Fokus Sun
-    zoom = 10 ** -6 # Fokus Erde
-    zoom = (10 ** -6) / 1.2 / 1.2 / 1.2 / 1.2 / 1.2 / 1.2 / 1.2 / 1.2 / 1.2 / 1.2 / 1.2 / 1.2  # Fokus Chandrayaan-2
+
+    # zoom = (10**-9) / 0.85 / 0.85 / 0.85 / 0.85 / 0.85 / 0.85 # Fokus Sun
+    zoom = 10**-6  # Fokus Erde
+    zoom = (
+        (10**-6) / 1.2 / 1.2 / 1.2 / 1.2 / 1.2 / 1.2 / 1.2 / 1.2 / 1.2 / 1.2 / 1.2 / 1.2
+    )  # Fokus Chandrayaan-2
     scroll_x = 0
     scroll_y = 0
     keysPressed = defaultdict(bool)
@@ -68,4 +72,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main() 
+    main()

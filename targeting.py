@@ -33,8 +33,9 @@ from rust_integration import RustAcceleratedIntegrator
 MISS_PENALTY = 1.0e9
 
 
-def closest_approach(scenario_name, target_apoapsis, maneuver_index,
-                     until, time_step=60.0, chaser="Moon"):
+def closest_approach(
+    scenario_name, target_apoapsis, maneuver_index, until, time_step=60.0, chaser="Moon"
+):
     """Dichteste Annäherung an `chaser`, wenn das Manöver dieses Ziel bekommt.
 
     Das Szenario wird für jeden Aufruf frisch geladen -- Manöver merken sich
@@ -51,7 +52,7 @@ def closest_approach(scenario_name, target_apoapsis, maneuver_index,
     # Manöver nach dem gesuchten abschalten: sie sind auf eine Bahn ausgelegt,
     # die es in diesem Zwischenstand noch nicht gibt, und würden die Suche
     # verfälschen.
-    for maneuver in probe.list_maneuvers[maneuver_index + 1:]:
+    for maneuver in probe.list_maneuvers[maneuver_index + 1 :]:
         maneuver.time_duration = 1e-9
         maneuver.delta_v = 0.0
         maneuver.force = None
@@ -64,9 +65,12 @@ def closest_approach(scenario_name, target_apoapsis, maneuver_index,
         integrator.calculate_states_batch(scenario.bodies, time_step, elapsed)
         elapsed += time_step
 
-        separation = float(np.linalg.norm(
-            probe.getLatestState().vec_location - target.getLatestState().vec_location
-        ))
+        separation = float(
+            np.linalg.norm(
+                probe.getLatestState().vec_location
+                - target.getLatestState().vec_location
+            )
+        )
         if separation < smallest:
             smallest, moment = separation, elapsed
 
@@ -77,8 +81,7 @@ def closest_approach(scenario_name, target_apoapsis, maneuver_index,
     return smallest, moment
 
 
-def solve(scenario_name, maneuver_index, bounds, until, samples=13,
-          tolerance=1.0e6):
+def solve(scenario_name, maneuver_index, bounds, until, samples=13, tolerance=1.0e6):
     """Sucht das Ziel-Apogäum mit der dichtesten Mondannäherung.
 
     Erst ein grobes Raster, dann eine Verfeinerung um den besten Punkt. Das
@@ -91,31 +94,37 @@ def solve(scenario_name, maneuver_index, bounds, until, samples=13,
     lower, upper = bounds
     grid = np.linspace(lower, upper, samples)
 
-    print(f"  Raster über {samples} Werte von {lower/1e3:,.0f} bis "
-          f"{upper/1e3:,.0f} km:")
+    print(
+        f"  Raster über {samples} Werte von {lower / 1e3:,.0f} bis "
+        f"{upper / 1e3:,.0f} km:"
+    )
     scores = []
     for value in grid:
-        distance, moment = closest_approach(scenario_name, value, maneuver_index,
-                                            until)
+        distance, moment = closest_approach(scenario_name, value, maneuver_index, until)
         scores.append(distance)
-        print(f"    ra = {value/1e3:>9,.0f} km  ->  {distance/1e3:>10,.0f} km "
-              f"bei Tag {moment/86400:5.2f}", flush=True)
+        print(
+            f"    ra = {value / 1e3:>9,.0f} km  ->  {distance / 1e3:>10,.0f} km "
+            f"bei Tag {moment / 86400:5.2f}",
+            flush=True,
+        )
 
     best = int(np.argmin(scores))
     left = grid[max(0, best - 1)]
     right = grid[min(len(grid) - 1, best + 1)]
-    print(f"  bestes Rasterfeld: {grid[best]/1e3:,.0f} km, verfeinere in "
-          f"[{left/1e3:,.0f}, {right/1e3:,.0f}] km")
+    print(
+        f"  bestes Rasterfeld: {grid[best] / 1e3:,.0f} km, verfeinere in "
+        f"[{left / 1e3:,.0f}, {right / 1e3:,.0f}] km"
+    )
 
     result = minimize_scalar(
-        lambda value: closest_approach(scenario_name, value, maneuver_index,
-                                       until)[0],
-        bracket=None, bounds=(left, right), method="bounded",
+        lambda value: closest_approach(scenario_name, value, maneuver_index, until)[0],
+        bracket=None,
+        bounds=(left, right),
+        method="bounded",
         options={"xatol": tolerance},
     )
 
-    distance, moment = closest_approach(scenario_name, result.x, maneuver_index,
-                                        until)
+    distance, moment = closest_approach(scenario_name, result.x, maneuver_index, until)
     return float(result.x), distance, moment
 
 
@@ -146,14 +155,23 @@ def apply_to_scenario(scenario_name, maneuver_index, target_apoapsis, note):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("scenario", default="chandrayaan2", nargs="?")
-    parser.add_argument("--maneuver", type=int, default=4,
-                        help="Index des zu lösenden Manövers (Vorgabe: TLI)")
+    parser.add_argument(
+        "--maneuver",
+        type=int,
+        default=4,
+        help="Index des zu lösenden Manövers (Vorgabe: TLI)",
+    )
     parser.add_argument("--lower", type=float, default=3.8e8)
     parser.add_argument("--upper", type=float, default=6.0e8)
-    parser.add_argument("--until", type=float, default=2.9e6,
-                        help="Wie weit gerechnet wird, in Sekunden")
-    parser.add_argument("--apply", action="store_true",
-                        help="Ergebnis ins Szenario schreiben")
+    parser.add_argument(
+        "--until",
+        type=float,
+        default=2.9e6,
+        help="Wie weit gerechnet wird, in Sekunden",
+    )
+    parser.add_argument(
+        "--apply", action="store_true", help="Ergebnis ins Szenario schreiben"
+    )
     args = parser.parse_args(argv)
 
     print(f"Zielsuche für {args.scenario}, Manöver {args.maneuver}:")
@@ -162,13 +180,15 @@ def main(argv=None):
     )
 
     print()
-    print(f"  Ziel-Apogäum      {target/1e3:,.0f} km")
-    print(f"  Mondannäherung    {distance/1e3:,.0f} km bei Tag {moment/86400:.2f}")
-    print(f"  Hill-Radius Mond  61,524 km")
+    print(f"  Ziel-Apogäum      {target / 1e3:,.0f} km")
+    print(f"  Mondannäherung    {distance / 1e3:,.0f} km bei Tag {moment / 86400:.2f}")
+    print("  Hill-Radius Mond  61,524 km")
 
     if args.apply:
         apply_to_scenario(
-            args.scenario, args.maneuver, target,
+            args.scenario,
+            args.maneuver,
+            target,
             "Aus einer Zielsuche auf die dichteste Mondannäherung, nicht aus "
             "der geflogenen Bahn gemessen -- siehe targeting.py",
         )

@@ -17,8 +17,8 @@ They hold no run state.
 ```python
 scenario = load_scenario("chandrayaan2")
 
-variant = scenario.with_maneuver(4, target_apoapsis=4.8e8)   # new object
-variant = variant.truncated_after(4)                         # drop later burns
+variant = scenario.with_maneuver(4, target_apoapsis=4.8e8)  # new object
+variant = variant.truncated_after(4)  # drop later burns
 ```
 
 - `with_maneuver(index, **changes)` MUST return a new scenario and leave the
@@ -30,14 +30,14 @@ variant = variant.truncated_after(4)                         # drop later burns
 ```python
 sim = Simulation(scenario, backend="auto", time_step=None, record=Recorder(every=10))
 
-sim.step()                    # one step
-sim.run_until(2.9e6)          # stops early on collision
-sim.time                      # seconds since epoch
-sim.positions, sim.velocities # (n, 3) float64 views, read-only
-sim.state_of("Moon")          # (position, velocity)
+sim.step()  # one step
+sim.run_until(2.9e6)  # stops early on collision
+sim.time  # seconds since epoch
+sim.positions, sim.velocities  # (n, 3) float64 views, read-only
+sim.state_of("Moon")  # (position, velocity)
 sim.relative_state("Chandrayaan-2", "Earth")
-sim.events                    # list of Event, in time order
-sim.backend                   # "python" | "rust" — what is actually in use
+sim.events  # list of Event, in time order
+sim.backend  # "python" | "rust" — what is actually in use
 ```
 
 Requirements:

@@ -23,8 +23,8 @@ from data.constants import DIMENSIONS
 from models.maneuver import Maneuver
 from models.massive_object import DEFAULT_HISTORY_LENGTH, MassiveObject
 from models.oblateness import Oblateness
-from models.trigger import PeriapsisTrigger, trigger_from_config
 from models.state import State
+from models.trigger import PeriapsisTrigger, trigger_from_config
 
 SCENARIO_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "scenarios")
 
@@ -50,8 +50,19 @@ class Milestone:
 
     VALID_STATUS = ("verified", "aspirational")
 
-    def __init__(self, name, time, body, relative_to, expected_distance, tolerance,
-                 status="verified", date=None, note=None, source=None):
+    def __init__(
+        self,
+        name,
+        time,
+        body,
+        relative_to,
+        expected_distance,
+        tolerance,
+        status="verified",
+        date=None,
+        note=None,
+        source=None,
+    ):
         if status not in self.VALID_STATUS:
             raise ScenarioError(
                 f"Meilenstein {name!r}: 'status' muss eines von "
@@ -75,8 +86,17 @@ class Milestone:
 class Scenario:
     """Ein vollständiges Missions-Szenario."""
 
-    def __init__(self, name, bodies, milestones, description=None, epoch=None,
-                 time_step=60.0, source=None, limitations=()):
+    def __init__(
+        self,
+        name,
+        bodies,
+        milestones,
+        description=None,
+        epoch=None,
+        time_step=60.0,
+        source=None,
+        limitations=(),
+    ):
         self.name = name
         self.bodies = bodies
         self.milestones = milestones
@@ -114,13 +134,12 @@ def _vector(raw, context):
     """
     if not isinstance(raw, (list, tuple)) or len(raw) not in (2, DIMENSIONS):
         raise ScenarioError(
-            f"{context}: erwartet einen Vektor [x, y] oder [x, y, z], "
-            f"bekam {raw!r}"
+            f"{context}: erwartet einen Vektor [x, y] oder [x, y, z], bekam {raw!r}"
         )
     try:
         components = [float(value) for value in raw]
-    except (TypeError, ValueError):
-        raise ScenarioError(f"{context}: Vektor {raw!r} ist nicht numerisch")
+    except (TypeError, ValueError) as error:
+        raise ScenarioError(f"{context}: Vektor {raw!r} ist nicht numerisch") from error
 
     components += [0.0] * (DIMENSIONS - len(components))
     return np.array(components)
@@ -164,7 +183,9 @@ def _resolve_order(raw_bodies):
             cycle = " -> ".join(trail + [name])
             raise ScenarioError(f"Zyklischer Bezug über 'relative_to': {cycle}")
         if name not in by_name:
-            raise ScenarioError(f"'relative_to' verweist auf unbekannten Körper {name!r}")
+            raise ScenarioError(
+                f"'relative_to' verweist auf unbekannten Körper {name!r}"
+            )
 
         visiting.add(name)
         parent = by_name[name].get("relative_to")
@@ -189,8 +210,9 @@ def _build_bodies(raw_bodies, raw_maneuvers, history_length):
         body_name = _require(raw, "body", context)
         direction = raw.get("direction")
 
-        strength = [key for key in ("force", "delta_v", "target_apoapsis")
-                    if key in raw]
+        strength = [
+            key for key in ("force", "delta_v", "target_apoapsis") if key in raw
+        ]
         if len(strength) != 1:
             raise ScenarioError(
                 f"{context}: genau eines von 'force', 'delta_v' und "
@@ -203,8 +225,11 @@ def _build_bodies(raw_bodies, raw_maneuvers, history_length):
             )
 
         try:
-            trigger = (trigger_from_config(raw["trigger"], context)
-                       if "trigger" in raw else None)
+            trigger = (
+                trigger_from_config(raw["trigger"], context)
+                if "trigger" in raw
+                else None
+            )
         except ValueError as error:
             raise ScenarioError(str(error)) from error
 
@@ -214,10 +239,13 @@ def _build_bodies(raw_bodies, raw_maneuvers, history_length):
                 time_duration=float(_require(raw, "duration", context)),
                 force=float(raw["force"]) if "force" in raw else None,
                 delta_v=float(raw["delta_v"]) if "delta_v" in raw else None,
-                target_apoapsis=(float(raw["target_apoapsis"])
-                                 if "target_apoapsis" in raw else None),
+                target_apoapsis=(
+                    float(raw["target_apoapsis"]) if "target_apoapsis" in raw else None
+                ),
                 target_reference=raw.get("target_reference"),
-                direction=_vector(direction, context) if direction is not None else None,
+                direction=_vector(direction, context)
+                if direction is not None
+                else None,
                 relative_to=raw.get("relative_to"),
                 trigger=trigger,
             )
@@ -228,8 +256,12 @@ def _build_bodies(raw_bodies, raw_maneuvers, history_length):
         name = raw["name"]
         context = f"Körper {name!r}"
 
-        vec_location = _vector(_require(raw, "location", context), f"{context}.location")
-        vec_velocity = _vector(_require(raw, "velocity", context), f"{context}.velocity")
+        vec_location = _vector(
+            _require(raw, "location", context), f"{context}.location"
+        )
+        vec_velocity = _vector(
+            _require(raw, "velocity", context), f"{context}.velocity"
+        )
 
         parent_name = raw.get("relative_to")
         if parent_name is not None:
@@ -239,7 +271,9 @@ def _build_bodies(raw_bodies, raw_maneuvers, history_length):
 
         color = raw.get("color", [255, 255, 255])
         if not isinstance(color, (list, tuple)) or len(color) != 3:
-            raise ScenarioError(f"{context}: 'color' erwartet [r, g, b], bekam {color!r}")
+            raise ScenarioError(
+                f"{context}: 'color' erwartet [r, g, b], bekam {color!r}"
+            )
 
         built[name] = MassiveObject(
             State(vec_velocity, vec_location),

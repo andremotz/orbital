@@ -14,9 +14,19 @@ DEFAULT_HISTORY_LENGTH = 1000
 class MassiveObject:
     """Klasse repräsentiert ein massives Objekt im Weltraum"""
 
-    def __init__(self, state_new, mass, radius, color, name, is_heavy,
-                 list_maneuvers, history_length=DEFAULT_HISTORY_LENGTH,
-                 oblateness=None, mu=None):
+    def __init__(
+        self,
+        state_new,
+        mass,
+        radius,
+        color,
+        name,
+        is_heavy,
+        list_maneuvers,
+        history_length=DEFAULT_HISTORY_LENGTH,
+        oblateness=None,
+        mu=None,
+    ):
         self.mass = mass
         # Standard-Gravitationsparameter GM. Er, nicht die Masse, bestimmt die
         # Anziehung; siehe die Erläuterung in data/constants.py. Ohne Angabe

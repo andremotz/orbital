@@ -143,8 +143,11 @@ class TestGroundTruthCache(unittest.TestCase):
         """
         summary = load_cache("chandrayaan2_maneuvers")
 
-        self.assertLess(summary["quiet_residual_median"], 0.1,
-                        "Restabweichung zu gross, Burn-Erkennung wäre unzuverlässig")
+        self.assertLess(
+            summary["quiet_residual_median"],
+            0.1,
+            "Restabweichung zu gross, Burn-Erkennung wäre unzuverlässig",
+        )
 
 
 class TestOrbitalElements(unittest.TestCase):
@@ -232,8 +235,9 @@ class TestDeltaVManeuvers(unittest.TestCase):
     """Manöver lassen sich über Delta-v statt über Schub beschreiben."""
 
     def test_delta_v_is_spread_over_the_burn(self):
-        probe = make_object("P", 1000.0, [7.0e6, 0.0, 0.0], [0.0, 1000.0, 0.0],
-                            is_heavy=False)
+        probe = make_object(
+            "P", 1000.0, [7.0e6, 0.0, 0.0], [0.0, 1000.0, 0.0], is_heavy=False
+        )
         probe.list_maneuvers.append(
             Maneuver(time_start=0, time_duration=100.0, delta_v=250.0)
         )
@@ -247,28 +251,30 @@ class TestDeltaVManeuvers(unittest.TestCase):
         """Anders als Schub: Delta-v beschreibt die Bahnänderung direkt."""
         magnitudes = []
         for mass in (1000.0, 3850.0):
-            probe = make_object("P", mass, [7.0e6, 0.0, 0.0], [0.0, 1000.0, 0.0],
-                                is_heavy=False)
+            probe = make_object(
+                "P", mass, [7.0e6, 0.0, 0.0], [0.0, 1000.0, 0.0], is_heavy=False
+            )
             probe.list_maneuvers.append(
                 Maneuver(time_start=0, time_duration=100.0, delta_v=250.0)
             )
-            magnitudes.append(float(np.linalg.norm(
-                get_mission_acceleration(probe, 50.0)
-            )))
+            magnitudes.append(
+                float(np.linalg.norm(get_mission_acceleration(probe, 50.0)))
+            )
 
         self.assertAlmostEqual(magnitudes[0], magnitudes[1], places=12)
 
     def test_force_still_depends_on_mass(self):
         magnitudes = []
         for mass in (1000.0, 2000.0):
-            probe = make_object("P", mass, [7.0e6, 0.0, 0.0], [0.0, 1000.0, 0.0],
-                                is_heavy=False)
+            probe = make_object(
+                "P", mass, [7.0e6, 0.0, 0.0], [0.0, 1000.0, 0.0], is_heavy=False
+            )
             probe.list_maneuvers.append(
                 Maneuver(time_start=0, time_duration=100.0, force=500.0)
             )
-            magnitudes.append(float(np.linalg.norm(
-                get_mission_acceleration(probe, 50.0)
-            )))
+            magnitudes.append(
+                float(np.linalg.norm(get_mission_acceleration(probe, 50.0)))
+            )
 
         self.assertAlmostEqual(magnitudes[0] / magnitudes[1], 2.0, places=12)
 

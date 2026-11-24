@@ -1,5 +1,5 @@
 # Physikalische Konstanten
-CONST_GRAVITY = 6.6743 * 10 ** -11
+CONST_GRAVITY = 6.6743 * 10**-11
 
 # Standard-Gravitationsparameter GM in m^3/s^2, aus JPL DE440.
 #
@@ -22,4 +22,4 @@ DIMENSIONS = 3
 
 # Fenster-Größen
 WIDTH, HEIGHT = 900, 900
-WIDTHD2, HEIGHTD2 = WIDTH/2., HEIGHT/2. 
+WIDTHD2, HEIGHTD2 = WIDTH / 2.0, HEIGHT / 2.0

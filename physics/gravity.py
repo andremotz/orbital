@@ -1,5 +1,6 @@
 import numpy as np
-from data.constants import CONST_GRAVITY, DIMENSIONS
+
+from data.constants import DIMENSIONS
 
 
 def accelerations(positions, mus):
@@ -24,8 +25,8 @@ def accelerations(positions, mus):
     # Schließt die Selbstanziehung aus, ohne durch null zu teilen
     np.fill_diagonal(distance, np.inf)
 
-    factor = mus[np.newaxis, :] / distance ** 3
-    return np.einsum('ij,ijk->ik', factor, delta)
+    factor = mus[np.newaxis, :] / distance**3
+    return np.einsum("ij,ijk->ik", factor, delta)
 
 
 def oblateness_accelerations(positions, bodies):
@@ -59,7 +60,7 @@ def oblateness_accelerations(positions, bodies):
         if not affected.any():
             continue
 
-        scale = -1.5 * oblateness.j2 * body.mu * oblateness.equatorial_radius ** 2
+        scale = -1.5 * oblateness.j2 * body.mu * oblateness.equatorial_radius**2
 
         offsets_affected = offsets[affected]
         distances_affected = distances[affected][:, np.newaxis]
@@ -69,11 +70,10 @@ def oblateness_accelerations(positions, bodies):
         perpendicular = offsets_affected - np.outer(along_pole, pole)
         ratio_squared = (along_pole[:, np.newaxis] / distances_affected) ** 2
 
-        contribution = (
-            (1.0 - 5.0 * ratio_squared) * perpendicular
-            + (3.0 - 5.0 * ratio_squared) * np.outer(along_pole, pole)
-        )
-        extra[affected] += scale / distances_affected ** 5 * contribution
+        contribution = (1.0 - 5.0 * ratio_squared) * perpendicular + (
+            3.0 - 5.0 * ratio_squared
+        ) * np.outer(along_pole, pole)
+        extra[affected] += scale / distances_affected**5 * contribution
 
     return extra
 
@@ -97,6 +97,6 @@ def get_acceleration(massiveObject_current, massiveObject_state, list_massiveObj
         if magnitude == 0.0:
             continue
 
-        vec_acceleration += massiveObject_other.mu * vec_distance / magnitude ** 3
+        vec_acceleration += massiveObject_other.mu * vec_distance / magnitude**3
 
     return vec_acceleration

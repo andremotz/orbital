@@ -147,6 +147,7 @@ dependencies — the scripts run from the checkout.
 
 ```bash
 python -m unittest discover tests        # full test suite
+ruff check . && ruff format --check .    # lint and formatting, as CI runs them
 python verification.py chandrayaan2      # mission verification report (one scenario;
                                          #   without an argument, the first alphabetically)
 ./build_rust_kernel.sh                   # optional: build the Rust kernel

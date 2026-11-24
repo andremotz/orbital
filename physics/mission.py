@@ -1,6 +1,7 @@
 import numpy as np
 
 from data.constants import DIMENSIONS
+
 from .elements import time_to_periapsis
 
 
@@ -41,8 +42,7 @@ def update_schedule(all_bodies, time):
                 continue
 
             if maneuver.trigger is not None:
-                context = TriggerContext(body, time, maneuver.time_duration,
-                                         all_bodies)
+                context = TriggerContext(body, time, maneuver.time_duration, all_bodies)
                 if not maneuver.trigger.should_activate(context):
                     continue
 
@@ -70,9 +70,11 @@ def _resolve_target(maneuver, body, all_bodies):
     # Brennt das Manöver um das Periapsis herum, muss dort gerechnet werden --
     # nicht am Zündpunkt, der eine halbe Brenndauer weiter draussen liegt.
     trigger = maneuver.trigger
-    at_periapsis = (getattr(trigger, "reference", None) == maneuver.target_reference
-                    and trigger is not None
-                    and hasattr(trigger, "reference"))
+    at_periapsis = (
+        getattr(trigger, "reference", None) == maneuver.target_reference
+        and trigger is not None
+        and hasattr(trigger, "reference")
+    )
 
     state = body.getLatestState()
     reference_state = reference.getLatestState()

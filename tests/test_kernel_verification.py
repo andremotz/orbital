@@ -23,7 +23,6 @@ import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from data.constants import CONST_GRAVITY
-from physics.integrator import step
 from tests.test_physics import advance, make_object
 
 MASS_SUN = 1.989e30
@@ -38,7 +37,11 @@ def solve_kepler_equation(mean_anomaly, eccentricity, tolerance=1e-14):
     """
     eccentric_anomaly = mean_anomaly
     for _ in range(100):
-        residual = eccentric_anomaly - eccentricity * math.sin(eccentric_anomaly) - mean_anomaly
+        residual = (
+            eccentric_anomaly
+            - eccentricity * math.sin(eccentric_anomaly)
+            - mean_anomaly
+        )
         derivative = 1.0 - eccentricity * math.cos(eccentric_anomaly)
         delta = residual / derivative
         eccentric_anomaly -= delta
@@ -54,13 +57,17 @@ def kepler_position(semi_major_axis, eccentricity, mu, elapsed):
     was zugleich prüft, dass die Integration keine Bewegung aus der Ebene
     heraus erfindet.
     """
-    mean_motion = math.sqrt(mu / semi_major_axis ** 3)
+    mean_motion = math.sqrt(mu / semi_major_axis**3)
     eccentric_anomaly = solve_kepler_equation(mean_motion * elapsed, eccentricity)
-    return np.array([
-        semi_major_axis * (math.cos(eccentric_anomaly) - eccentricity),
-        semi_major_axis * math.sqrt(1.0 - eccentricity ** 2) * math.sin(eccentric_anomaly),
-        0.0,
-    ])
+    return np.array(
+        [
+            semi_major_axis * (math.cos(eccentric_anomaly) - eccentricity),
+            semi_major_axis
+            * math.sqrt(1.0 - eccentricity**2)
+            * math.sin(eccentric_anomaly),
+            0.0,
+        ]
+    )
 
 
 def kepler_pair(semi_major_axis=AU, eccentricity=0.5, satellite_mass=1000.0):
@@ -71,17 +78,23 @@ def kepler_pair(semi_major_axis=AU, eccentricity=0.5, satellite_mass=1000.0):
     """
     mu = CONST_GRAVITY * (MASS_SUN + satellite_mass)
     perihelion = semi_major_axis * (1.0 - eccentricity)
-    speed = math.sqrt(mu * (1.0 + eccentricity) / (semi_major_axis * (1.0 - eccentricity)))
+    speed = math.sqrt(
+        mu * (1.0 + eccentricity) / (semi_major_axis * (1.0 - eccentricity))
+    )
 
     central = make_object("Central", MASS_SUN, [0.0, 0.0], [0.0, 0.0])
-    satellite = make_object("Satellite", satellite_mass, [perihelion, 0.0], [0.0, speed])
+    satellite = make_object(
+        "Satellite", satellite_mass, [perihelion, 0.0], [0.0, speed]
+    )
     return [central, satellite], mu
 
 
 def relative_position(objects):
     """Position des Satelliten relativ zum Zentralkörper."""
-    return (objects[1].getLatestState().vec_location
-            - objects[0].getLatestState().vec_location)
+    return (
+        objects[1].getLatestState().vec_location
+        - objects[0].getLatestState().vec_location
+    )
 
 
 class TestKeplerProblem(unittest.TestCase):
@@ -91,7 +104,7 @@ class TestKeplerProblem(unittest.TestCase):
     ECCENTRICITY = 0.5
 
     def period(self, mu):
-        return 2.0 * math.pi * math.sqrt(self.SEMI_MAJOR_AXIS ** 3 / mu)
+        return 2.0 * math.pi * math.sqrt(self.SEMI_MAJOR_AXIS**3 / mu)
 
     def test_matches_analytic_solution_after_one_orbit(self):
         objects, mu = kepler_pair(self.SEMI_MAJOR_AXIS, self.ECCENTRICITY)
@@ -103,7 +116,8 @@ class TestKeplerProblem(unittest.TestCase):
         expected = kepler_position(self.SEMI_MAJOR_AXIS, self.ECCENTRICITY, mu, period)
         error = float(np.linalg.norm(relative_position(objects) - expected))
         self.assertLess(
-            error / self.SEMI_MAJOR_AXIS, 1e-9,
+            error / self.SEMI_MAJOR_AXIS,
+            1e-9,
             "Bahn weicht nach einem Umlauf von der Kepler-Lösung ab",
         )
 
@@ -130,7 +144,7 @@ class TestKeplerProblem(unittest.TestCase):
         """Bei e=0.9 wird das Perihel schnell durchlaufen -- der harte Fall."""
         eccentricity = 0.9
         objects, mu = kepler_pair(self.SEMI_MAJOR_AXIS, eccentricity)
-        period = 2.0 * math.pi * math.sqrt(self.SEMI_MAJOR_AXIS ** 3 / mu)
+        period = 2.0 * math.pi * math.sqrt(self.SEMI_MAJOR_AXIS**3 / mu)
         steps = 200000
 
         advance(objects, period / steps, steps)
@@ -146,7 +160,7 @@ class TestConvergenceOrder(unittest.TestCase):
     def test_error_scales_with_fourth_power_of_step_size(self):
         semi_major_axis, eccentricity = AU, 0.3
         _, mu = kepler_pair(semi_major_axis, eccentricity)
-        period = 2.0 * math.pi * math.sqrt(semi_major_axis ** 3 / mu)
+        period = 2.0 * math.pi * math.sqrt(semi_major_axis**3 / mu)
         elapsed = period / 4.0
 
         errors = []

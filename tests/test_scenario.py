@@ -10,6 +10,8 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from data.constants import GM_EARTH
+from data.horizons import load_cache
 from data.scenario import (
     ScenarioError,
     available_scenarios,
@@ -18,8 +20,6 @@ from data.scenario import (
 )
 from physics.mission import get_mission_acceleration
 from tests.test_physics import make_object
-from data.constants import GM_EARTH
-from data.horizons import load_cache
 from verification import (
     find_collision,
     format_report,
@@ -134,8 +134,9 @@ class TestScenarioLoading(unittest.TestCase):
         scenario = load_named_scenario("chandrayaan2")
         # Ausgelöste Manöver haben keine feste Zeit; massgeblich ist der
         # früheste mögliche Zündzeitpunkt.
-        starts = [m.earliest_time
-                  for m in scenario.body("Chandrayaan-2").list_maneuvers]
+        starts = [
+            m.earliest_time for m in scenario.body("Chandrayaan-2").list_maneuvers
+        ]
 
         self.assertEqual(starts, sorted(starts))
 
@@ -163,10 +164,14 @@ class TestScenarioValidation(unittest.TestCase):
 
     def test_two_component_vector_is_padded_to_three(self):
         """Zweikomponentige Angaben bleiben zulässig und meinen z = 0."""
-        path = write_scenario({
-            "name": "X",
-            "bodies": [dict(MINIMAL_BODY, location=[1.0, 2.0], velocity=[3.0, 4.0])],
-        })
+        path = write_scenario(
+            {
+                "name": "X",
+                "bodies": [
+                    dict(MINIMAL_BODY, location=[1.0, 2.0], velocity=[3.0, 4.0])
+                ],
+            }
+        )
         try:
             scenario = load_scenario(path)
         finally:
@@ -178,7 +183,9 @@ class TestScenarioValidation(unittest.TestCase):
 
     def test_unknown_relative_to(self):
         body = dict(MINIMAL_BODY, relative_to="Nowhere")
-        self.load_and_expect_error({"name": "X", "bodies": [body]}, "unbekannten Körper")
+        self.load_and_expect_error(
+            {"name": "X", "bodies": [body]}, "unbekannten Körper"
+        )
 
     def test_cyclic_relative_to(self):
         payload = {
@@ -209,8 +216,13 @@ class TestScenarioValidation(unittest.TestCase):
             "name": "X",
             "bodies": [dict(MINIMAL_BODY)],
             "maneuvers": [
-                {"body": "Star", "time_start": 0, "duration": 10, "force": 1,
-                 "relative_to": "Ghost"}
+                {
+                    "body": "Star",
+                    "time_start": 0,
+                    "duration": 10,
+                    "force": 1,
+                    "relative_to": "Ghost",
+                }
             ],
         }
         self.load_and_expect_error(payload, "relative_to")
@@ -220,8 +232,15 @@ class TestScenarioValidation(unittest.TestCase):
             "name": "X",
             "bodies": [dict(MINIMAL_BODY)],
             "milestones": [
-                {"name": "M", "time": 1, "body": "Star", "relative_to": "Star",
-                 "expected_distance": 0, "tolerance": 1, "status": "vielleicht"}
+                {
+                    "name": "M",
+                    "time": 1,
+                    "body": "Star",
+                    "relative_to": "Star",
+                    "expected_distance": 0,
+                    "tolerance": 1,
+                    "status": "vielleicht",
+                }
             ],
         }
         self.load_and_expect_error(payload, "status")
@@ -237,8 +256,13 @@ class TestBurnReferenceFrame(unittest.TestCase):
         """Sonde im Erdorbit, Erde selbst schnell um die Sonne unterwegs."""
         earth = make_object("Earth", 5.9722e24, [0.0, 1.5e11], [29780.0, 0.0])
         # Sonde bewegt sich relativ zur Erde entgegen deren Bahnrichtung
-        probe = make_object("Probe", 1000.0, [0.0, 1.5e11 + 7.0e6],
-                            [29780.0 - 7500.0, 0.0], is_heavy=False)
+        probe = make_object(
+            "Probe",
+            1000.0,
+            [0.0, 1.5e11 + 7.0e6],
+            [29780.0 - 7500.0, 0.0],
+            is_heavy=False,
+        )
         return [earth, probe]
 
     def test_prograde_without_frame_follows_absolute_velocity(self):
@@ -256,9 +280,7 @@ class TestBurnReferenceFrame(unittest.TestCase):
         bodies = self.make_orbit()
         from models.maneuver import Maneuver
 
-        bodies[1].list_maneuvers.append(
-            Maneuver(0, 100, 1000.0, relative_to="Earth")
-        )
+        bodies[1].list_maneuvers.append(Maneuver(0, 100, 1000.0, relative_to="Earth"))
         acceleration = get_mission_acceleration(bodies[1], 50.0, bodies)
 
         # Relativ zur Erde bewegt sich die Sonde mit -x
@@ -321,8 +343,10 @@ class TestMissionVerification(unittest.TestCase):
 
         capture = results[0]
         self.assertEqual(capture.milestone.status, "verified")
-        self.assertTrue(capture.within_tolerance,
-                        f"Einfang verfehlt: {capture.actual_distance/1e3:.0f} km")
+        self.assertTrue(
+            capture.within_tolerance,
+            f"Einfang verfehlt: {capture.actual_distance / 1e3:.0f} km",
+        )
         self.assertFalse(capture.is_failure)
 
     def test_ballistic_phase_tracks_the_real_trajectory(self):
@@ -336,22 +360,31 @@ class TestMissionVerification(unittest.TestCase):
         """
         scenario = load_named_scenario("chandrayaan2")
         truth = load_cache("chandrayaan2_truth")["records"]
-        first_burn = min(m.earliest_time
-                         for m in scenario.body("Chandrayaan-2").list_maneuvers)
+        first_burn = min(
+            m.earliest_time for m in scenario.body("Chandrayaan-2").list_maneuvers
+        )
 
         epoch = truth[0]["jd"]
-        ballistic = [record for record in truth
-                     if (record["jd"] - epoch) * 86400.0 < first_burn]
+        ballistic = [
+            record for record in truth if (record["jd"] - epoch) * 86400.0 < first_burn
+        ]
         self.assertGreater(len(ballistic), 2, "Zu wenige Punkte vor dem ersten Burn")
 
         samples = track_against_truth(
             scenario, ballistic, "Chandrayaan-2", "Earth", GM_EARTH
         )
 
-        self.assertAlmostEqual(samples[0].position_error, 0.0, delta=1.0,
-                               msg="Startzustand weicht bereits ab")
-        self.assertLess(max(s.position_error for s in samples), 1.0e6,
-                        "Ballistische Phase driftet um mehr als 1000 km")
+        self.assertAlmostEqual(
+            samples[0].position_error,
+            0.0,
+            delta=1.0,
+            msg="Startzustand weicht bereits ab",
+        )
+        self.assertLess(
+            max(s.position_error for s in samples),
+            1.0e6,
+            "Ballistische Phase driftet um mehr als 1000 km",
+        )
 
     def test_report_mentions_limitations(self):
         scenario = load_named_scenario("chandrayaan2")
@@ -374,13 +407,14 @@ class TestMissionVerification(unittest.TestCase):
         """
         scenario = load_named_scenario("chandrayaan2")
 
-        offset = (scenario.body("Moon").getLatestState().vec_location
-                  - scenario.body("Earth").getLatestState().vec_location)
+        offset = (
+            scenario.body("Moon").getLatestState().vec_location
+            - scenario.body("Earth").getLatestState().vec_location
+        )
         inclination = abs(np.degrees(np.arcsin(offset[2] / np.linalg.norm(offset))))
 
         self.assertGreater(inclination, 4.0)
         self.assertLess(inclination, 6.0)
-
 
 
 class TestArtemisScenario(unittest.TestCase):
@@ -392,8 +426,9 @@ class TestArtemisScenario(unittest.TestCase):
     def test_tli_matches_the_published_delta_v(self):
         """NASA nennt 388 m/s; die Erkennung darf davon kaum abweichen."""
         scenario = load_named_scenario("artemis2")
-        burns = [m for m in scenario.body("Artemis II").list_maneuvers
-                 if m.delta_v > 100.0]
+        burns = [
+            m for m in scenario.body("Artemis II").list_maneuvers if m.delta_v > 100.0
+        ]
 
         self.assertEqual(len(burns), 1, "Genau ein grosser Burn erwartet: der TLI")
         self.assertAlmostEqual(burns[0].delta_v, 388.0, delta=2.0)
@@ -401,8 +436,9 @@ class TestArtemisScenario(unittest.TestCase):
     def test_tli_fires_at_perigee_with_the_published_duration(self):
         """Beides zusammen bringt erst die richtige Bahnhoehe."""
         scenario = load_named_scenario("artemis2")
-        tli = [m for m in scenario.body("Artemis II").list_maneuvers
-               if m.delta_v > 100.0][0]
+        tli = [
+            m for m in scenario.body("Artemis II").list_maneuvers if m.delta_v > 100.0
+        ][0]
 
         self.assertIsNotNone(tli.trigger)
         self.assertEqual(tli.trigger.reference, "Earth")
@@ -419,8 +455,9 @@ class TestArtemisScenario(unittest.TestCase):
 
         # NASA: 413.146,2 km. Ohne Zielsteuerung sind wenige Prozent zu erwarten.
         relative = distance[0].error / distance[0].milestone.expected_distance
-        self.assertLess(relative, 0.03,
-                        f"Groesste Erdentfernung weicht um {relative:.1%} ab")
+        self.assertLess(
+            relative, 0.03, f"Groesste Erdentfernung weicht um {relative:.1%} ab"
+        )
 
     def test_verification_cli_succeeds(self):
         """`python verification.py artemis2` must run through to exit code 0.

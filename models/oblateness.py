@@ -9,11 +9,13 @@ OBLIQUITY_J2000 = math.radians(23.4392911)
 # Erdachse in ekliptikalen Koordinaten. Die Simulation rechnet in der
 # Ekliptik, die Abplattung liegt aber um die Rotationsachse -- ohne diese
 # Drehung säße der Äquatorwulst in der falschen Ebene.
-EARTH_POLE_ECLIPTIC = np.array([
-    0.0,
-    -math.sin(OBLIQUITY_J2000),
-    math.cos(OBLIQUITY_J2000),
-])
+EARTH_POLE_ECLIPTIC = np.array(
+    [
+        0.0,
+        -math.sin(OBLIQUITY_J2000),
+        math.cos(OBLIQUITY_J2000),
+    ]
+)
 
 # Zweiter zonaler Koeffizient und Äquatorradius der Erde (WGS 84 / EGM96)
 EARTH_J2 = 1.08262668e-3

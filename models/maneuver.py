@@ -36,9 +36,18 @@ class Maneuver:
     nie gewollt ist.
     """
 
-    def __init__(self, time_start=None, time_duration=None, force=None,
-                 direction=None, relative_to=None, delta_v=None, trigger=None,
-                 target_apoapsis=None, target_reference=None):
+    def __init__(
+        self,
+        time_start=None,
+        time_duration=None,
+        force=None,
+        direction=None,
+        relative_to=None,
+        delta_v=None,
+        trigger=None,
+        target_apoapsis=None,
+        target_reference=None,
+    ):
         given = [value is not None for value in (force, delta_v, target_apoapsis)]
         if sum(given) != 1:
             raise ValueError(
@@ -141,8 +150,7 @@ class Maneuver:
 
             current = elements_from_state(vec_location, vec_velocity, mu)
             distance = current.periapsis
-            speed = math.sqrt(mu * (2.0 / distance
-                                    - 1.0 / current.semi_major_axis))
+            speed = math.sqrt(mu * (2.0 / distance - 1.0 / current.semi_major_axis))
 
         semi_major_axis = (distance + self.target_apoapsis) / 2.0
         required_squared = mu * (2.0 / distance - 1.0 / semi_major_axis)
@@ -180,8 +188,11 @@ class Maneuver:
             strength = f"dv={self.delta_v:.1f}m/s"
         else:
             strength = f"F={self.force:.0f}N"
-        when = (f"t={self.time_start:.0f}s" if self.time_start is not None
-                else f"@{self.trigger.describe()}")
+        when = (
+            f"t={self.time_start:.0f}s"
+            if self.time_start is not None
+            else f"@{self.trigger.describe()}"
+        )
         return f"<Maneuver {when} +{self.time_duration:.0f}s {strength}>"
 
 

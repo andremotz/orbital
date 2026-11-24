@@ -1,7 +1,7 @@
 # Work items
 
-Backlog as of 2026-11-23. WI-001 (CI), WI-002 (`pyproject.toml`) and WI-003
-(statements that were no longer true) are done. Items are ordered by
+Backlog as of 2026-11-24. WI-001 (CI), WI-002 (`pyproject.toml`), WI-003
+(statements that were no longer true) and WI-004 (ruff) are done. Items are ordered by
 priority within each group. Sizes: **S** ≤ half a day, **M** 1–2 days,
 **L** more.
 
@@ -11,8 +11,6 @@ ID.
 
 | ID | Title | Size | Depends on |
 |---|---|---|---|
-| **Now — foundations** | | | |
-| [WI-004](#wi-004-linting-and-formatting) | Linting and formatting | S | – |
 | **Next — structure** | | | |
 | [WI-005](#wi-005-package-layout-and-maturin-build) | Package layout and maturin build | L | – |
 | [WI-006](#wi-006-single-cli-remove-duplicate-entry-points) | Single CLI, remove duplicate entry points | M | WI-005 |
@@ -33,19 +31,6 @@ ID.
 | [WI-020](#wi-020-error-budget-and-further-perturbations) | Error budget and further perturbations | L | WI-010 |
 | [WI-021](#wi-021-collision-response) | Collision response | S | WI-007 |
 | [WI-022](#wi-022-repository-hygiene) | Repository hygiene | S | – |
-
----
-
-## Now — foundations
-
-### WI-004: Linting and formatting
-
-**What.** `ruff` (lint + format) configured in `pyproject.toml`, run in CI.
-(`rustfmt` and `clippy` already run in CI.) Optional `pre-commit` config. Fix what
-it finds (trailing whitespace, missing final newlines, unused imports such as
-`CONST_GRAVITY` in `physics/gravity.py`).
-
-**Acceptance.** `ruff check` and `ruff format --check` pass in CI.
 
 ---
 
@@ -74,7 +59,9 @@ zoom chain and German comments.
 **What.** Implement [specs/cli.md](specs/cli.md). One matplotlib viewer with
 the backend as an option. Decide whether the pygame viewer is kept (as an
 extra) or dropped. Delete the root scripts as their subcommands land.
-`rust_trail_optimizer.py`: keep only if a measurement shows it helps.
+`rust_trail_optimizer.py`: keep only if a measurement shows it helps. Its
+"Rust" path calls no Rust, and runs the whole Python trail processing once
+per trail buffer instead of once per call.
 
 **Acceptance.** The repository root contains no `.py` files. Every command in
 the README is an `orbital …` command.
