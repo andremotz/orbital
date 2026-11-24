@@ -72,8 +72,9 @@ class RustAcceleratedIntegrator:
         else:
             print("🐍 Verwende Python RK4-Integration")
 
-    def calculate_states_batch(self, massive_objects: List, time_step: float,
-                               time: float = 0.0) -> None:
+    def calculate_states_batch(
+        self, massive_objects: List, time_step: float, time: float = 0.0
+    ) -> None:
         """
         Berechnet neue Zustände für alle Objekte in einem Batch
         """
@@ -98,8 +99,9 @@ class RustAcceleratedIntegrator:
             print(f"⚠️  Fehler im Rust-Kernel, verwende Python-Fallback: {e}")
             self._calculate_states_python(massive_objects, time_step, time)
 
-    def _calculate_states_python(self, massive_objects: List, time_step: float,
-                                 time: float = 0.0) -> None:
+    def _calculate_states_python(
+        self, massive_objects: List, time_step: float, time: float = 0.0
+    ) -> None:
         """
         Python-Fallback-Implementierung
         """
@@ -115,51 +117,59 @@ class PerformanceBenchmark:
         self.rust_integrator = RustAcceleratedIntegrator(use_rust=True)
         self.python_integrator = RustAcceleratedIntegrator(use_rust=False)
 
-    def benchmark_simulation(self, massive_objects: List, time_steps: int = 1000,
-                             time_step: float = 60.0) -> dict:
+    def benchmark_simulation(
+        self, massive_objects: List, time_steps: int = 1000, time_step: float = 60.0
+    ) -> dict:
         """
         Führt einen Performance-Benchmark durch
         """
-        print(f"🔬 Benchmark: {time_steps} Zeitschritte mit {len(massive_objects)} Objekten")
+        print(
+            f"🔬 Benchmark: {time_steps} Zeitschritte mit {len(massive_objects)} Objekten"
+        )
         print("=" * 60)
 
         results = {}
 
         print("🐍 Python-Implementierung...")
-        python_time = self._time_run(self.python_integrator, massive_objects,
-                                     time_steps, time_step)
-        results['python'] = {
-            'time': python_time,
-            'steps_per_second': time_steps / python_time,
-            'objects': len(massive_objects),
+        python_time = self._time_run(
+            self.python_integrator, massive_objects, time_steps, time_step
+        )
+        results["python"] = {
+            "time": python_time,
+            "steps_per_second": time_steps / python_time,
+            "objects": len(massive_objects),
         }
         print(f"   Zeit: {python_time:.3f}s")
-        print(f"   Schritte/Sekunde: {time_steps/python_time:.1f}")
+        print(f"   Schritte/Sekunde: {time_steps / python_time:.1f}")
 
         if not RUST_AVAILABLE:
             print("\n⚠️  Rust-Kernel nicht verfügbar für Benchmark")
             return results
 
         print("\n🚀 Rust-Implementierung...")
-        rust_time = self._time_run(self.rust_integrator, massive_objects,
-                                   time_steps, time_step)
-        results['rust'] = {
-            'time': rust_time,
-            'steps_per_second': time_steps / rust_time,
-            'objects': len(massive_objects),
+        rust_time = self._time_run(
+            self.rust_integrator, massive_objects, time_steps, time_step
+        )
+        results["rust"] = {
+            "time": rust_time,
+            "steps_per_second": time_steps / rust_time,
+            "objects": len(massive_objects),
         }
         print(f"   Zeit: {rust_time:.3f}s")
-        print(f"   Schritte/Sekunde: {time_steps/rust_time:.1f}")
+        print(f"   Schritte/Sekunde: {time_steps / rust_time:.1f}")
 
         speedup = python_time / rust_time
         print(f"\n⚡ Speedup: {speedup:.2f}x")
-        print(f"   Zeitersparnis: {((python_time - rust_time) / python_time * 100):.1f}%")
-        results['speedup'] = speedup
+        print(
+            f"   Zeitersparnis: {((python_time - rust_time) / python_time * 100):.1f}%"
+        )
+        results["speedup"] = speedup
 
         return results
 
-    def _time_run(self, integrator, massive_objects: List, time_steps: int,
-                  time_step: float) -> float:
+    def _time_run(
+        self, integrator, massive_objects: List, time_steps: int, time_step: float
+    ) -> float:
         """Misst einen Lauf auf einer Kopie, damit beide gleich starten."""
         objects = self._copy_objects(massive_objects)
 

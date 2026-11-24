@@ -34,13 +34,18 @@ class TestVisVivaResolution(unittest.TestCase):
         radius, target = 7.0e6, 4.2e7
         location, velocity = circular_state(radius)
 
-        maneuver = Maneuver(time_start=0.0, time_duration=100.0,
-                            target_apoapsis=target, relative_to="Earth")
+        maneuver = Maneuver(
+            time_start=0.0,
+            time_duration=100.0,
+            target_apoapsis=target,
+            relative_to="Earth",
+        )
         resolved = maneuver.resolve(location, velocity, GM_EARTH)
 
         semi_major_axis = (radius + target) / 2.0
-        expected = (math.sqrt(GM_EARTH * (2.0 / radius - 1.0 / semi_major_axis))
-                    - math.sqrt(GM_EARTH / radius))
+        expected = math.sqrt(
+            GM_EARTH * (2.0 / radius - 1.0 / semi_major_axis)
+        ) - math.sqrt(GM_EARTH / radius)
         self.assertAlmostEqual(resolved / expected, 1.0, places=12)
 
     def test_reaches_the_requested_apoapsis(self):
@@ -48,13 +53,18 @@ class TestVisVivaResolution(unittest.TestCase):
         radius, target = 7.0e6, 4.2e7
         location, velocity = circular_state(radius)
 
-        maneuver = Maneuver(time_start=0.0, time_duration=100.0,
-                            target_apoapsis=target, relative_to="Earth")
+        maneuver = Maneuver(
+            time_start=0.0,
+            time_duration=100.0,
+            target_apoapsis=target,
+            relative_to="Earth",
+        )
         resolved = maneuver.resolve(location, velocity, GM_EARTH)
 
         direction = velocity / np.linalg.norm(velocity)
-        elements = elements_from_state(location, velocity + direction * resolved,
-                                       GM_EARTH)
+        elements = elements_from_state(
+            location, velocity + direction * resolved, GM_EARTH
+        )
         self.assertAlmostEqual(elements.apoapsis / target, 1.0, places=9)
 
     def test_a_lower_orbit_needs_more(self):
@@ -67,8 +77,12 @@ class TestVisVivaResolution(unittest.TestCase):
         deltas = []
         for radius in (6.6e6, 7.0e6):
             location, velocity = circular_state(radius)
-            maneuver = Maneuver(time_start=0.0, time_duration=100.0,
-                                target_apoapsis=target, relative_to="Earth")
+            maneuver = Maneuver(
+                time_start=0.0,
+                time_duration=100.0,
+                target_apoapsis=target,
+                relative_to="Earth",
+            )
             deltas.append(maneuver.resolve(location, velocity, GM_EARTH))
 
         self.assertGreater(deltas[0], deltas[1])
@@ -78,8 +92,12 @@ class TestVisVivaResolution(unittest.TestCase):
         radius = 7.0e6
         location, velocity = circular_state(radius)
 
-        maneuver = Maneuver(time_start=0.0, time_duration=100.0,
-                            target_apoapsis=radius * 0.9, relative_to="Earth")
+        maneuver = Maneuver(
+            time_start=0.0,
+            time_duration=100.0,
+            target_apoapsis=radius * 0.9,
+            relative_to="Earth",
+        )
         resolved = maneuver.resolve(location, velocity, GM_EARTH)
 
         self.assertLess(resolved, 0.0)
@@ -90,30 +108,44 @@ class TestVisVivaResolution(unittest.TestCase):
         radius = 7.0e6
         location, velocity = circular_state(radius)
 
-        maneuver = Maneuver(time_start=0.0, time_duration=100.0,
-                            target_apoapsis=radius * 0.5, relative_to="Earth")
+        maneuver = Maneuver(
+            time_start=0.0,
+            time_duration=100.0,
+            target_apoapsis=radius * 0.5,
+            relative_to="Earth",
+        )
         self.assertLess(maneuver.resolve(location, velocity, GM_EARTH), 0.0)
 
     def test_negative_target_is_rejected_when_built(self):
         """Ein negativer Radius ist keine Bahn, sondern ein Eingabefehler."""
         with self.assertRaises(ValueError):
-            Maneuver(time_start=0.0, time_duration=100.0,
-                     target_apoapsis=-1.0, relative_to="Earth")
+            Maneuver(
+                time_start=0.0,
+                time_duration=100.0,
+                target_apoapsis=-1.0,
+                relative_to="Earth",
+            )
 
     def test_unresolved_target_produces_no_thrust(self):
         """Vor dem Zünden ist das Delta-v unbekannt -- dann brennt nichts."""
-        maneuver = Maneuver(time_start=0.0, time_duration=100.0,
-                            target_apoapsis=4.2e7, relative_to="Earth")
+        maneuver = Maneuver(
+            time_start=0.0,
+            time_duration=100.0,
+            target_apoapsis=4.2e7,
+            relative_to="Earth",
+        )
 
         self.assertEqual(maneuver.acceleration_magnitude(1000.0), 0.0)
 
     def test_reset_clears_the_resolved_value(self):
         """Sonst liefe eine Zielsuche im zweiten Durchlauf mit alten Werten."""
         location, velocity = circular_state(7.0e6)
-        maneuver = Maneuver(time_duration=100.0, target_apoapsis=4.2e7,
-                            relative_to="Earth",
-                            trigger=__import__("models.trigger", fromlist=["x"])
-                            .TimeTrigger(0.0))
+        maneuver = Maneuver(
+            time_duration=100.0,
+            target_apoapsis=4.2e7,
+            relative_to="Earth",
+            trigger=__import__("models.trigger", fromlist=["x"]).TimeTrigger(0.0),
+        )
         maneuver.resolve(location, velocity, GM_EARTH)
         self.assertIsNotNone(maneuver.resolved_delta_v)
 
@@ -130,8 +162,11 @@ class TestPeriapsisReferencedResolution(unittest.TestCase):
         eccentricity = (apoapsis - periapsis) / (apoapsis + periapsis)
         # Etwas vor dem Periapsis: kleiner negativer Winkel der wahren Anomalie
         angle = -fraction * math.pi
-        radius = (semi_major_axis * (1 - eccentricity ** 2)
-                  / (1 + eccentricity * math.cos(angle)))
+        radius = (
+            semi_major_axis
+            * (1 - eccentricity**2)
+            / (1 + eccentricity * math.cos(angle))
+        )
         location = np.array([radius * math.cos(angle), radius * math.sin(angle), 0.0])
         speed = math.sqrt(GM_EARTH * (2.0 / radius - 1.0 / semi_major_axis))
         # Richtung grob tangential; für den Test zählt der Betrag
@@ -144,14 +179,21 @@ class TestPeriapsisReferencedResolution(unittest.TestCase):
         location, velocity = self.eccentric_state()
         target = 1.5e8
 
-        at_ignition = Maneuver(time_start=0.0, time_duration=100.0,
-                               target_apoapsis=target, relative_to="Earth")
-        at_periapsis = Maneuver(time_start=0.0, time_duration=100.0,
-                                target_apoapsis=target, relative_to="Earth")
+        at_ignition = Maneuver(
+            time_start=0.0,
+            time_duration=100.0,
+            target_apoapsis=target,
+            relative_to="Earth",
+        )
+        at_periapsis = Maneuver(
+            time_start=0.0,
+            time_duration=100.0,
+            target_apoapsis=target,
+            relative_to="Earth",
+        )
 
         loose = at_ignition.resolve(location, velocity, GM_EARTH)
-        tight = at_periapsis.resolve(location, velocity, GM_EARTH,
-                                     at_periapsis=True)
+        tight = at_periapsis.resolve(location, velocity, GM_EARTH, at_periapsis=True)
 
         self.assertLess(tight, loose)
 
@@ -162,10 +204,13 @@ class TestPeriapsisReferencedResolution(unittest.TestCase):
         location = np.array([radius, 0.0, 0.0])
         velocity = np.array([0.0, escape * 1.1, 0.0])
 
-        maneuver = Maneuver(time_start=0.0, time_duration=100.0,
-                            target_apoapsis=1.8e7, relative_to="Moon")
-        resolved = maneuver.resolve(location, velocity, GM_MOON,
-                                    at_periapsis=True)
+        maneuver = Maneuver(
+            time_start=0.0,
+            time_duration=100.0,
+            target_apoapsis=1.8e7,
+            relative_to="Moon",
+        )
+        resolved = maneuver.resolve(location, velocity, GM_MOON, at_periapsis=True)
 
         self.assertLess(resolved, 0.0, "Einfang muss bremsen")
 
@@ -202,8 +247,7 @@ class TestHyperbolicPeriapsisPrediction(unittest.TestCase):
 
         # Grobe Gegenprobe über die mittlere Radialgeschwindigkeit
         travelled = float(np.linalg.norm(location)) - elements.periapsis
-        radial_speed = abs(float(np.dot(location, velocity))
-                           / np.linalg.norm(location))
+        radial_speed = abs(float(np.dot(location, velocity)) / np.linalg.norm(location))
         self.assertLess(remaining, travelled / radial_speed * 3.0)
 
 
@@ -212,20 +256,32 @@ class TestScenarioTargets(unittest.TestCase):
 
     def test_chandrayaan_targets_are_ordered_outwards(self):
         scenario = load_named_scenario("chandrayaan2")
-        earth_burns = [m for m in scenario.body("Chandrayaan-2").list_maneuvers
-                       if m.target_reference == "Earth"]
+        earth_burns = [
+            m
+            for m in scenario.body("Chandrayaan-2").list_maneuvers
+            if m.target_reference == "Earth"
+        ]
 
         targets = [m.target_apoapsis for m in earth_burns]
-        self.assertEqual(targets, sorted(targets),
-                         "Eine Bahnanhebung darf nicht nach innen zielen")
+        self.assertEqual(
+            targets, sorted(targets), "Eine Bahnanhebung darf nicht nach innen zielen"
+        )
 
     def test_target_without_reference_is_rejected(self):
-        path = write_scenario({
-            "name": "X",
-            "bodies": [dict(MINIMAL_BODY)],
-            "maneuvers": [{"body": "Star", "time_start": 0, "duration": 10,
-                           "target_apoapsis": 1.0e8}],
-        })
+        path = write_scenario(
+            {
+                "name": "X",
+                "bodies": [dict(MINIMAL_BODY)],
+                "maneuvers": [
+                    {
+                        "body": "Star",
+                        "time_start": 0,
+                        "duration": 10,
+                        "target_apoapsis": 1.0e8,
+                    }
+                ],
+            }
+        )
         try:
             with self.assertRaises(ScenarioError) as context:
                 load_scenario(path)
@@ -234,13 +290,22 @@ class TestScenarioTargets(unittest.TestCase):
             os.unlink(path)
 
     def test_two_strengths_are_rejected(self):
-        path = write_scenario({
-            "name": "X",
-            "bodies": [dict(MINIMAL_BODY)],
-            "maneuvers": [{"body": "Star", "time_start": 0, "duration": 10,
-                           "delta_v": 5, "target_apoapsis": 1.0e8,
-                           "relative_to": "Star"}],
-        })
+        path = write_scenario(
+            {
+                "name": "X",
+                "bodies": [dict(MINIMAL_BODY)],
+                "maneuvers": [
+                    {
+                        "body": "Star",
+                        "time_start": 0,
+                        "duration": 10,
+                        "delta_v": 5,
+                        "target_apoapsis": 1.0e8,
+                        "relative_to": "Star",
+                    }
+                ],
+            }
+        )
         try:
             with self.assertRaises(ScenarioError):
                 load_scenario(path)

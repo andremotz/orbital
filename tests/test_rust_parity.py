@@ -39,13 +39,19 @@ def scenario():
     return [
         make_object("Sun", MASS_SUN, [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]),
         make_object("Earth", 5.9722e24, [0.0, AU, 0.0], [29780.0, 0.0, 0.0]),
-        make_object("Moon", 7.349e22,
-                    [0.0, AU + 3.5523395142e8, 3.1985027687e7],
-                    [29780.0 + 1015.9, 0.0, 91.4]),
-        make_object("Probe", 100.0,
-                    [0.0, AU + 4.5475e7, 6.0e6],
-                    [29780.0 + 2220.0, 0.0, -310.0],
-                    is_heavy=False),
+        make_object(
+            "Moon",
+            7.349e22,
+            [0.0, AU + 3.5523395142e8, 3.1985027687e7],
+            [29780.0 + 1015.9, 0.0, 91.4],
+        ),
+        make_object(
+            "Probe",
+            100.0,
+            [0.0, AU + 4.5475e7, 6.0e6],
+            [29780.0 + 2220.0, 0.0, -310.0],
+            is_heavy=False,
+        ),
     ]
 
 
@@ -71,15 +77,28 @@ def oblate_earth_with_satellite(oblateness=True):
     drift = np.array([1000.0, 0.0, 0.0])
 
     earth = MassiveObject(
-        State(drift.copy(), offset.copy()), 5.9722e24, 6.371e6, (0, 255, 255),
-        "Earth", True, [], mu=GM_EARTH,
+        State(drift.copy(), offset.copy()),
+        5.9722e24,
+        6.371e6,
+        (0, 255, 255),
+        "Earth",
+        True,
+        [],
+        mu=GM_EARTH,
         oblateness=Oblateness.earth() if oblateness else None,
     )
     satellite = MassiveObject(
-        State(drift + np.array([0.0, speed * np.cos(inclination),
-                                speed * np.sin(inclination)]),
-              offset + np.array([radius, 0.0, 0.0])),
-        1000.0, 5.0, (255, 255, 255), "Satellite", False, [],
+        State(
+            drift
+            + np.array([0.0, speed * np.cos(inclination), speed * np.sin(inclination)]),
+            offset + np.array([radius, 0.0, 0.0]),
+        ),
+        1000.0,
+        5.0,
+        (255, 255, 255),
+        "Satellite",
+        False,
+        [],
     )
     return [earth, satellite]
 
@@ -107,8 +126,9 @@ class TestKernelIsRequired(unittest.TestCase):
 class TestRustParity(unittest.TestCase):
     """Rust und Python müssen bis auf Rundung identische Ergebnisse liefern."""
 
-    def assert_same_trajectory(self, objects_python, objects_rust, steps, time_step,
-                               rtol):
+    def assert_same_trajectory(
+        self, objects_python, objects_rust, steps, time_step, rtol
+    ):
         integrator = RustAcceleratedIntegrator(use_rust=True)
         self.assertTrue(integrator.use_rust, "Rust-Pfad wurde nicht verwendet")
 
@@ -123,12 +143,14 @@ class TestRustParity(unittest.TestCase):
                 self.assert_vectors_agree(
                     actual.getLatestState().vec_location,
                     expected.getLatestState().vec_location,
-                    rtol, f"{expected.name}: Position",
+                    rtol,
+                    f"{expected.name}: Position",
                 )
                 self.assert_vectors_agree(
                     actual.getLatestState().vec_velocity,
                     expected.getLatestState().vec_velocity,
-                    rtol, f"{expected.name}: Geschwindigkeit",
+                    rtol,
+                    f"{expected.name}: Geschwindigkeit",
                 )
 
     def assert_vectors_agree(self, actual, expected, rtol, label):
@@ -143,14 +165,16 @@ class TestRustParity(unittest.TestCase):
         deviation = float(np.linalg.norm(np.asarray(actual) - np.asarray(expected)))
         scale = float(np.linalg.norm(expected))
         self.assertLessEqual(
-            deviation / scale, rtol,
+            deviation / scale,
+            rtol,
             f"{label}: Abweichung {deviation:.3e} bei Betrag {scale:.3e}",
         )
 
     def test_single_step_matches(self):
         """Ein Schritt muss bis auf Gleitkomma-Rundung exakt übereinstimmen."""
-        self.assert_same_trajectory(scenario(), scenario(), steps=1,
-                                    time_step=60.0, rtol=1e-12)
+        self.assert_same_trajectory(
+            scenario(), scenario(), steps=1, time_step=60.0, rtol=1e-12
+        )
 
     def test_scenario_actually_leaves_the_ecliptic(self):
         """Absicherung: sonst prüften die Paritätstests die dritte Achse nicht."""
@@ -162,8 +186,9 @@ class TestRustParity(unittest.TestCase):
     def test_out_of_plane_motion_matches(self):
         """Die z-Komponente muss in beiden Kernels gleich laufen."""
         objects_python, objects_rust = scenario(), scenario()
-        self.assert_same_trajectory(objects_python, objects_rust, steps=2000,
-                                    time_step=60.0, rtol=1e-9)
+        self.assert_same_trajectory(
+            objects_python, objects_rust, steps=2000, time_step=60.0, rtol=1e-9
+        )
 
         # Und sie darf nicht bei null verharren, sonst ist der Test wertlos
         drift = abs(float(objects_rust[3].getLatestState().vec_location[2] - 6.0e6))
@@ -171,14 +196,18 @@ class TestRustParity(unittest.TestCase):
 
     def test_long_run_matches(self):
         """Auch über viele Schritte darf nichts auseinanderlaufen."""
-        self.assert_same_trajectory(scenario(), scenario(), steps=5000,
-                                    time_step=60.0, rtol=1e-9)
+        self.assert_same_trajectory(
+            scenario(), scenario(), steps=5000, time_step=60.0, rtol=1e-9
+        )
 
     def test_oblateness_matches(self):
         """The J2 term must be computed identically in both kernels."""
         self.assert_same_trajectory(
-            oblate_earth_with_satellite(), oblate_earth_with_satellite(),
-            steps=1000, time_step=30.0, rtol=1e-9,
+            oblate_earth_with_satellite(),
+            oblate_earth_with_satellite(),
+            steps=1000,
+            time_step=30.0,
+            rtol=1e-9,
         )
 
     def test_oblateness_actually_changes_the_result(self):
@@ -207,8 +236,9 @@ class TestRustParity(unittest.TestCase):
                 Maneuver(time_start=0, time_duration=60_000, force=500.0)
             )
 
-        self.assert_same_trajectory(objects_python, objects_rust, steps=500,
-                                    time_step=60.0, rtol=1e-9)
+        self.assert_same_trajectory(
+            objects_python, objects_rust, steps=500, time_step=60.0, rtol=1e-9
+        )
 
     def test_thrust_actually_changes_the_result(self):
         """Absicherung: ohne wirksamen Schub wäre der Test oben wertlos."""
@@ -237,7 +267,9 @@ class TestRustKernelContract(unittest.TestCase):
 
     def test_rejects_mismatched_shapes(self):
         objects, _ = circular_orbit_pair()
-        mus, positions, velocities, thrust, j2, radii, poles = gather_arrays(objects, 0.0)
+        mus, positions, velocities, thrust, j2, radii, poles = gather_arrays(
+            objects, 0.0
+        )
 
         with self.assertRaises(ValueError):
             orbital_rust_kernel.rk4_step_python(
@@ -246,7 +278,9 @@ class TestRustKernelContract(unittest.TestCase):
 
     def test_rejects_mismatched_oblateness_length(self):
         objects, _ = circular_orbit_pair()
-        mus, positions, velocities, thrust, j2, radii, poles = gather_arrays(objects, 0.0)
+        mus, positions, velocities, thrust, j2, radii, poles = gather_arrays(
+            objects, 0.0
+        )
 
         with self.assertRaises(ValueError):
             orbital_rust_kernel.rk4_step_python(
@@ -256,13 +290,21 @@ class TestRustKernelContract(unittest.TestCase):
     def test_accepts_non_contiguous_input(self):
         """Ein Array-Slice darf keinen stillen Speicherfehler auslösen."""
         objects = scenario()
-        mus, positions, velocities, thrust, j2, radii, poles = gather_arrays(objects, 0.0)
+        mus, positions, velocities, thrust, j2, radii, poles = gather_arrays(
+            objects, 0.0
+        )
 
         # Jede zweite Zeile -- der zugrundeliegende Speicher ist nicht mehr zusammenhängend
         with self.assertRaises(Exception):
             orbital_rust_kernel.rk4_step_python(
-                mus[::2], positions[::2], velocities[::2], thrust[::2],
-                j2[::2], radii[::2], poles[::2], 60.0
+                mus[::2],
+                positions[::2],
+                velocities[::2],
+                thrust[::2],
+                j2[::2],
+                radii[::2],
+                poles[::2],
+                60.0,
             )
 
 

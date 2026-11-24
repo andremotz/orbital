@@ -101,12 +101,16 @@ def parse_vectors(payload):
 
     records = []
     for match in _RECORD_PATTERN.finditer(body):
-        records.append({
-            "jd": float(match.group("jd")),
-            "date": match.group("date"),
-            "location": [float(match.group(axis)) * KM for axis in ("x", "y", "z")],
-            "velocity": [float(match.group(axis)) * KM for axis in ("vx", "vy", "vz")],
-        })
+        records.append(
+            {
+                "jd": float(match.group("jd")),
+                "date": match.group("date"),
+                "location": [float(match.group(axis)) * KM for axis in ("x", "y", "z")],
+                "velocity": [
+                    float(match.group(axis)) * KM for axis in ("vx", "vy", "vz")
+                ],
+            }
+        )
 
     if not records:
         raise HorizonsError("Ephemeride enthielt keine lesbaren Datensätze")
@@ -114,8 +118,9 @@ def parse_vectors(payload):
     return records
 
 
-def fetch_vectors(body, start_time, stop_time, step_size,
-                  center=SOLAR_SYSTEM_BARYCENTER, timeout=60):
+def fetch_vectors(
+    body, start_time, stop_time, step_size, center=SOLAR_SYSTEM_BARYCENTER, timeout=60
+):
     """Holt Zustandsvektoren direkt von Horizons. Braucht eine Netzverbindung."""
     url = build_query(body, start_time, stop_time, step_size, center)
     try:
@@ -164,5 +169,7 @@ def available_caches():
 
 def state_arrays(record):
     """Gibt Ort und Geschwindigkeit eines Datensatzes als Arrays zurück."""
-    return (np.array(record["location"], dtype=float),
-            np.array(record["velocity"], dtype=float))
+    return (
+        np.array(record["location"], dtype=float),
+        np.array(record["velocity"], dtype=float),
+    )

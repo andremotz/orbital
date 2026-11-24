@@ -92,7 +92,9 @@ def simulate(mission_key):
     for index in range(sample_count):
         target = index * sample_step
         while elapsed < target:
-            integrator.calculate_states_batch(scenario.bodies, scenario.time_step, elapsed)
+            integrator.calculate_states_batch(
+                scenario.bodies, scenario.time_step, elapsed
+            )
             elapsed += scenario.time_step
 
         origin = earth.getLatestState().vec_location
@@ -147,8 +149,9 @@ def view_limits(probe, moon, times, reference_seconds, reference_positions):
         reference_extent = np.maximum.accumulate(
             np.max(np.abs(reference_positions), axis=1)
         )
-        extent = np.maximum(extent, np.interp(times, reference_seconds,
-                                              reference_extent))
+        extent = np.maximum(
+            extent, np.interp(times, reference_seconds, reference_extent)
+        )
 
     # Mindestausdehnung, damit die ersten Bilder nicht auf einen Punkt zoomen.
     # Bewusst klein gehalten: an den Mondabstand gekoppelt wäre der Startorbit
@@ -159,7 +162,9 @@ def view_limits(probe, moon, times, reference_seconds, reference_positions):
     smoothed = np.empty_like(target)
     smoothed[0] = target[0]
     for index in range(1, len(target)):
-        follow = smoothed[index - 1] + ZOOM_SMOOTHING * (target[index] - smoothed[index - 1])
+        follow = smoothed[index - 1] + ZOOM_SMOOTHING * (
+            target[index] - smoothed[index - 1]
+        )
         # Nie zurückzoomen: ein schrumpfendes Bild wirkt wie ein Fehler
         smoothed[index] = max(smoothed[index - 1], follow)
 
@@ -185,35 +190,54 @@ def build_animation(mission_key, data, reference_seconds, reference_positions):
 
     mission = MISSIONS[mission_key]
     probe, moon = data["probe"], data["moon"]
-    limits = view_limits(probe, moon, data["times"],
-                         reference_seconds, reference_positions)
+    limits = view_limits(
+        probe, moon, data["times"], reference_seconds, reference_positions
+    )
 
     figure, axes = plt.subplots(figsize=(8.0, 8.0))
     figure.patch.set_facecolor(BACKGROUND)
-    style_axes(axes, f"{mission['title']}\n{mission['subtitle']}",
-               "x (1000 km, ecliptic)", "y (1000 km, ecliptic)")
+    style_axes(
+        axes,
+        f"{mission['title']}\n{mission['subtitle']}",
+        "x (1000 km, ecliptic)",
+        "y (1000 km, ecliptic)",
+    )
     axes.set_aspect("equal")
 
     scale = 1e6  # Meter -> 1000 km
 
-    moon_path, = axes.plot([], [], color=GRID, linewidth=1.0, linestyle="--",
-                           label="Moon's orbit")
-    real_path, = axes.plot([], [], color=REAL, linewidth=2.0,
-                           label="actually flown (JPL Horizons)")
-    sim_path, = axes.plot([], [], color=SIMULATED, linewidth=1.8,
-                          label="simulated")
-    probe_dot, = axes.plot([], [], "o", color=SIMULATED, markersize=6)
-    moon_dot, = axes.plot([], [], "o", color=FOREGROUND, markersize=7)
-    burn_dot, = axes.plot([], [], "o", color=WARN, markersize=13, alpha=0.75)
+    (moon_path,) = axes.plot(
+        [], [], color=GRID, linewidth=1.0, linestyle="--", label="Moon's orbit"
+    )
+    (real_path,) = axes.plot(
+        [], [], color=REAL, linewidth=2.0, label="actually flown (JPL Horizons)"
+    )
+    (sim_path,) = axes.plot([], [], color=SIMULATED, linewidth=1.8, label="simulated")
+    (probe_dot,) = axes.plot([], [], "o", color=SIMULATED, markersize=6)
+    (moon_dot,) = axes.plot([], [], "o", color=FOREGROUND, markersize=7)
+    (burn_dot,) = axes.plot([], [], "o", color=WARN, markersize=13, alpha=0.75)
 
     axes.plot(0, 0, "o", color=ACCENT, markersize=8)
-    axes.annotate("Earth", (0, 0), textcoords="offset points", xytext=(9, -14),
-                  color=FOREGROUND, fontsize=9)
+    axes.annotate(
+        "Earth",
+        (0, 0),
+        textcoords="offset points",
+        xytext=(9, -14),
+        color=FOREGROUND,
+        fontsize=9,
+    )
 
-    clock = axes.text(0.02, 0.97, "", transform=axes.transAxes, va="top",
-                      color=FOREGROUND, fontsize=11, family="monospace")
-    event = axes.text(0.02, 0.05, "", transform=axes.transAxes,
-                      color=WARN, fontsize=11)
+    clock = axes.text(
+        0.02,
+        0.97,
+        "",
+        transform=axes.transAxes,
+        va="top",
+        color=FOREGROUND,
+        fontsize=11,
+        family="monospace",
+    )
+    event = axes.text(0.02, 0.05, "", transform=axes.transAxes, color=WARN, fontsize=11)
     style_legend(axes, loc="upper right")
 
     def draw(frame):
@@ -228,8 +252,10 @@ def build_animation(mission_key, data, reference_seconds, reference_positions):
 
         if reference_positions is not None:
             visible = reference_seconds <= moment
-            real_path.set_data(reference_positions[visible, 0] / scale,
-                               reference_positions[visible, 1] / scale)
+            real_path.set_data(
+                reference_positions[visible, 0] / scale,
+                reference_positions[visible, 1] / scale,
+            )
 
         if data["burning"][head]:
             burn_dot.set_data([probe[head, 0] / scale], [probe[head, 1] / scale])
@@ -243,13 +269,27 @@ def build_animation(mission_key, data, reference_seconds, reference_positions):
         axes.set_ylim(-limit, limit)
 
         distance = float(np.hypot(probe[head, 0], probe[head, 1]))
-        clock.set_text(f"day {moment / 86400:5.2f}\n"
-                       f"{distance / 1e3:8,.0f} km from Earth")
-        return [sim_path, moon_path, real_path, probe_dot, moon_dot, burn_dot,
-                clock, event]
+        clock.set_text(
+            f"day {moment / 86400:5.2f}\n{distance / 1e3:8,.0f} km from Earth"
+        )
+        return [
+            sim_path,
+            moon_path,
+            real_path,
+            probe_dot,
+            moon_dot,
+            burn_dot,
+            clock,
+            event,
+        ]
 
-    animation = FuncAnimation(figure, draw, frames=FRAME_COUNT,
-                              interval=1000.0 / FRAMES_PER_SECOND, blit=False)
+    animation = FuncAnimation(
+        figure,
+        draw,
+        frames=FRAME_COUNT,
+        interval=1000.0 / FRAMES_PER_SECOND,
+        blit=False,
+    )
     return figure, animation
 
 
@@ -264,14 +304,33 @@ def write_gif(source, target, width=640):
     chain = f"fps={FRAMES_PER_SECOND},scale={width}:-1:flags=lanczos"
 
     subprocess.run(
-        ["ffmpeg", "-y", "-v", "error", "-i", source,
-         "-vf", f"{chain},palettegen=stats_mode=diff", palette],
+        [
+            "ffmpeg",
+            "-y",
+            "-v",
+            "error",
+            "-i",
+            source,
+            "-vf",
+            f"{chain},palettegen=stats_mode=diff",
+            palette,
+        ],
         check=True,
     )
     subprocess.run(
-        ["ffmpeg", "-y", "-v", "error", "-i", source, "-i", palette,
-         "-lavfi", f"{chain}[x];[x][1:v]paletteuse=dither=bayer:bayer_scale=3",
-         target],
+        [
+            "ffmpeg",
+            "-y",
+            "-v",
+            "error",
+            "-i",
+            source,
+            "-i",
+            palette,
+            "-lavfi",
+            f"{chain}[x];[x][1:v]paletteuse=dither=bayer:bayer_scale=3",
+            target,
+        ],
         check=True,
     )
     os.remove(palette)
@@ -289,19 +348,26 @@ def render(mission_key, outdir, make_gif=True):
 
     video = os.path.join(outdir, f"{mission_key}.mp4")
     print(f"  {mission_key}: {FRAME_COUNT} Bilder -> {video}", flush=True)
-    animation.save(video, writer=FFMpegWriter(
-        fps=FRAMES_PER_SECOND, bitrate=4000,
-        extra_args=["-pix_fmt", "yuv420p"],
-    ))
+    animation.save(
+        video,
+        writer=FFMpegWriter(
+            fps=FRAMES_PER_SECOND,
+            bitrate=4000,
+            extra_args=["-pix_fmt", "yuv420p"],
+        ),
+    )
 
     import matplotlib.pyplot as plt
+
     plt.close(figure)
 
     if make_gif:
         gif = os.path.join(outdir, f"{mission_key}.gif")
         write_gif(video, gif)
-        print(f"  {mission_key}: -> {gif} "
-              f"({os.path.getsize(gif) / 1e6:.1f} MB)", flush=True)
+        print(
+            f"  {mission_key}: -> {gif} ({os.path.getsize(gif) / 1e6:.1f} MB)",
+            flush=True,
+        )
 
 
 def preview(mission_key):
@@ -322,21 +388,28 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     # Kein `choices`: argparse prüft bei nargs="*" auch den Vorgabewert
     # dagegen, sodass sich "alle Missionen" nicht als Default ausdrücken lässt.
-    parser.add_argument("missions", nargs="*", default=[],
-                        help=f"Welche Missionen ({', '.join(MISSIONS)}); "
-                             f"ohne Angabe alle")
-    parser.add_argument("--preview", action="store_true",
-                        help="Live ansehen statt exportieren")
-    parser.add_argument("--no-gif", action="store_true",
-                        help="Nur den MP4-Master schreiben")
+    parser.add_argument(
+        "missions",
+        nargs="*",
+        default=[],
+        help=f"Welche Missionen ({', '.join(MISSIONS)}); ohne Angabe alle",
+    )
+    parser.add_argument(
+        "--preview", action="store_true", help="Live ansehen statt exportieren"
+    )
+    parser.add_argument(
+        "--no-gif", action="store_true", help="Nur den MP4-Master schreiben"
+    )
     parser.add_argument("--outdir", default=os.path.join("docs", "animations"))
     args = parser.parse_args(argv)
 
     missions = args.missions or list(MISSIONS)
     unknown = [name for name in missions if name not in MISSIONS]
     if unknown:
-        parser.error(f"Unbekannte Mission: {', '.join(unknown)}. "
-                     f"Bekannt sind: {', '.join(MISSIONS)}")
+        parser.error(
+            f"Unbekannte Mission: {', '.join(unknown)}. "
+            f"Bekannt sind: {', '.join(MISSIONS)}"
+        )
 
     if args.preview:
         # Vorschau braucht ein Fenster; ein erzwungenes Agg würde sie

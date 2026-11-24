@@ -18,8 +18,9 @@ import numpy as np
 class OrbitalElements:
     """Die klassischen Bahnelemente einer Keplerbahn."""
 
-    def __init__(self, semi_major_axis, eccentricity, inclination,
-                 periapsis, apoapsis, period):
+    def __init__(
+        self, semi_major_axis, eccentricity, inclination, periapsis, apoapsis, period
+    ):
         self.semi_major_axis = semi_major_axis
         self.eccentricity = eccentricity
         self.inclination = inclination
@@ -28,8 +29,10 @@ class OrbitalElements:
         self.period = period
 
     def __repr__(self):
-        return (f"<a={self.semi_major_axis/1e3:.0f}km e={self.eccentricity:.4f} "
-                f"i={math.degrees(self.inclination):.2f}deg>")
+        return (
+            f"<a={self.semi_major_axis / 1e3:.0f}km e={self.eccentricity:.4f} "
+            f"i={math.degrees(self.inclination):.2f}deg>"
+        )
 
 
 def elements_from_state(vec_location, vec_velocity, mu):
@@ -53,7 +56,7 @@ def elements_from_state(vec_location, vec_velocity, mu):
     angular_momentum_magnitude = float(np.linalg.norm(angular_momentum))
 
     # Vis-Viva nach der grossen Halbachse aufgelöst
-    specific_energy = speed ** 2 / 2.0 - mu / distance
+    specific_energy = speed**2 / 2.0 - mu / distance
     if specific_energy == 0.0:
         semi_major_axis = math.inf
     else:
@@ -75,14 +78,15 @@ def elements_from_state(vec_location, vec_velocity, mu):
     if eccentricity < 1.0 and semi_major_axis > 0.0:
         periapsis = semi_major_axis * (1.0 - eccentricity)
         apoapsis = semi_major_axis * (1.0 + eccentricity)
-        period = 2.0 * math.pi * math.sqrt(semi_major_axis ** 3 / mu)
+        period = 2.0 * math.pi * math.sqrt(semi_major_axis**3 / mu)
     else:
         periapsis = abs(semi_major_axis) * (eccentricity - 1.0)
         apoapsis = math.inf
         period = math.inf
 
-    return OrbitalElements(semi_major_axis, eccentricity, inclination,
-                           periapsis, apoapsis, period)
+    return OrbitalElements(
+        semi_major_axis, eccentricity, inclination, periapsis, apoapsis, period
+    )
 
 
 def time_to_periapsis(vec_location, vec_velocity, mu):
@@ -122,14 +126,15 @@ def time_to_periapsis(vec_location, vec_velocity, mu):
         return 0.0
 
     cosine = (1.0 - distance / semi_major_axis) / eccentricity
-    sine = (float(np.dot(vec_location, vec_velocity))
-            / (eccentricity * math.sqrt(mu * semi_major_axis)))
+    sine = float(np.dot(vec_location, vec_velocity)) / (
+        eccentricity * math.sqrt(mu * semi_major_axis)
+    )
     eccentric_anomaly = math.atan2(sine, max(-1.0, min(1.0, cosine)))
 
     mean_anomaly = eccentric_anomaly - eccentricity * math.sin(eccentric_anomaly)
     mean_anomaly %= 2.0 * math.pi
 
-    mean_motion = math.sqrt(mu / semi_major_axis ** 3)
+    mean_motion = math.sqrt(mu / semi_major_axis**3)
     return (2.0 * math.pi - mean_anomaly) / mean_motion
 
 
@@ -164,5 +169,5 @@ def _time_to_periapsis_open(vec_location, vec_velocity, mu, elements):
     hyperbolic_anomaly = math.acosh(cosh_anomaly)
     mean_anomaly = eccentricity * math.sinh(hyperbolic_anomaly) - hyperbolic_anomaly
 
-    mean_motion = math.sqrt(mu / semi_major_axis ** 3)
+    mean_motion = math.sqrt(mu / semi_major_axis**3)
     return mean_anomaly / mean_motion

@@ -22,11 +22,14 @@ class TestTiming(unittest.TestCase):
     """Beide Animationen sollen exakt gleich lang laufen."""
 
     def test_frame_count_matches_the_requested_duration(self):
-        expected = int(make_animations.DURATION_SECONDS
-                       * make_animations.FRAMES_PER_SECOND)
+        expected = int(
+            make_animations.DURATION_SECONDS * make_animations.FRAMES_PER_SECOND
+        )
         self.assertEqual(make_animations.FRAME_COUNT, expected)
-        self.assertEqual(make_animations.FRAME_COUNT / make_animations.FRAMES_PER_SECOND,
-                         make_animations.DURATION_SECONDS)
+        self.assertEqual(
+            make_animations.FRAME_COUNT / make_animations.FRAMES_PER_SECOND,
+            make_animations.DURATION_SECONDS,
+        )
 
     def test_trajectory_is_sampled_finer_than_the_frame_rate(self):
         """Sonst geriete der Bahnschweif zum Vieleck.
@@ -42,8 +45,11 @@ class TestTiming(unittest.TestCase):
         step = duration / samples
 
         early_orbit_period = 13.8 * 3600.0
-        self.assertGreater(early_orbit_period / step, 20.0,
-                           "Zu wenige Stützstellen je Umlauf für eine glatte Bahn")
+        self.assertGreater(
+            early_orbit_period / step,
+            20.0,
+            "Zu wenige Stützstellen je Umlauf für eine glatte Bahn",
+        )
 
 
 class TestViewLimits(unittest.TestCase):
@@ -62,8 +68,9 @@ class TestViewLimits(unittest.TestCase):
 
         limits = make_animations.view_limits(track, track, times, None, None)
 
-        self.assertTrue(np.all(np.diff(limits) >= -1e-9),
-                        "Sichtfeld wird zwischendurch enger")
+        self.assertTrue(
+            np.all(np.diff(limits) >= -1e-9), "Sichtfeld wird zwischendurch enger"
+        )
 
     def test_shrinking_track_keeps_the_wide_view(self):
         """Auch wenn die Sonde zurückkommt, bleibt die Ansicht weit."""
@@ -108,8 +115,11 @@ class TestViewLimits(unittest.TestCase):
             track, track, times, reference_seconds, reference
         )
 
-        self.assertGreater(with_reference[-1], without[-1],
-                           "Die weiter reichende reale Bahn liefe aus dem Bild")
+        self.assertGreater(
+            with_reference[-1],
+            without[-1],
+            "Die weiter reichende reale Bahn liefe aus dem Bild",
+        )
 
     def test_minimum_extent_keeps_the_first_frames_readable(self):
         """Ohne Untergrenze zoomte der Anfang auf einen Punkt."""

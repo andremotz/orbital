@@ -67,10 +67,16 @@ def run_scenario(name, truth_records, body_name):
         while elapsed < target:
             integrator.calculate_states_batch(scenario.bodies, 60.0, elapsed)
             elapsed += 60.0
-        simulated.append((body.getLatestState().vec_location
-                          - earth.getLatestState().vec_location).copy())
-        moon_track.append((moon.getLatestState().vec_location
-                           - earth.getLatestState().vec_location).copy())
+        simulated.append(
+            (
+                body.getLatestState().vec_location - earth.getLatestState().vec_location
+            ).copy()
+        )
+        moon_track.append(
+            (
+                moon.getLatestState().vec_location - earth.getLatestState().vec_location
+            ).copy()
+        )
 
     return np.array(simulated), np.array(moon_track)
 
@@ -82,29 +88,65 @@ def figure_artemis_trajectory(outdir):
     actual = np.array([record["location"] for record in truth])
 
     figure, axes = new_figure(9.0, 8.0)
-    style_axes(axes,
-               "Artemis II: freie Rückkehrbahn um den Mond\n"
-               "Simulation gegen die tatsächlich geflogene Bahn",
-               "x (1000 km, Ekliptik)", "y (1000 km, Ekliptik)")
+    style_axes(
+        axes,
+        "Artemis II: freie Rückkehrbahn um den Mond\n"
+        "Simulation gegen die tatsächlich geflogene Bahn",
+        "x (1000 km, Ekliptik)",
+        "y (1000 km, Ekliptik)",
+    )
 
-    axes.plot(moon[:, 0] / 1e6, moon[:, 1] / 1e6, color=GRID, linewidth=1.2,
-              linestyle="--", label="Mondbahn")
-    axes.plot(actual[:, 0] / 1e6, actual[:, 1] / 1e6, color=REAL, linewidth=2.4,
-              label="real (JPL Horizons)")
-    axes.plot(simulated[:, 0] / 1e6, simulated[:, 1] / 1e6, color=SIMULATED,
-              linewidth=2.0, linestyle="-", label="simuliert")
+    axes.plot(
+        moon[:, 0] / 1e6,
+        moon[:, 1] / 1e6,
+        color=GRID,
+        linewidth=1.2,
+        linestyle="--",
+        label="Mondbahn",
+    )
+    axes.plot(
+        actual[:, 0] / 1e6,
+        actual[:, 1] / 1e6,
+        color=REAL,
+        linewidth=2.4,
+        label="real (JPL Horizons)",
+    )
+    axes.plot(
+        simulated[:, 0] / 1e6,
+        simulated[:, 1] / 1e6,
+        color=SIMULATED,
+        linewidth=2.0,
+        linestyle="-",
+        label="simuliert",
+    )
 
     axes.plot(0, 0, "o", color=ACCENT, markersize=9)
-    axes.annotate("Erde", (0, 0), textcoords="offset points", xytext=(10, -14),
-                  color=FOREGROUND, fontsize=9)
+    axes.annotate(
+        "Erde",
+        (0, 0),
+        textcoords="offset points",
+        xytext=(10, -14),
+        color=FOREGROUND,
+        fontsize=9,
+    )
 
     furthest = int(np.argmax(np.linalg.norm(actual, axis=1)))
-    axes.plot(moon[furthest, 0] / 1e6, moon[furthest, 1] / 1e6, "o",
-              color=FOREGROUND, markersize=7)
-    axes.annotate("Mond bei\ndichtester Annäherung",
-                  (moon[furthest, 0] / 1e6, moon[furthest, 1] / 1e6),
-                  textcoords="offset points", xytext=(-40, 18),
-                  color=FOREGROUND, fontsize=8, ha="center")
+    axes.plot(
+        moon[furthest, 0] / 1e6,
+        moon[furthest, 1] / 1e6,
+        "o",
+        color=FOREGROUND,
+        markersize=7,
+    )
+    axes.annotate(
+        "Mond bei\ndichtester Annäherung",
+        (moon[furthest, 0] / 1e6, moon[furthest, 1] / 1e6),
+        textcoords="offset points",
+        xytext=(-40, 18),
+        color=FOREGROUND,
+        fontsize=8,
+        ha="center",
+    )
 
     axes.set_aspect("equal")
     legend = axes.legend(facecolor=BACKGROUND, edgecolor=GRID, fontsize=9)
@@ -123,17 +165,31 @@ def figure_artemis_distance(outdir):
     days = np.array([(record["jd"] - epoch) for record in truth])
 
     figure, axes = new_figure()
-    style_axes(axes,
-               "Artemis II: Abstand zur Erde\n"
-               "größte Entfernung real 413.146 km, simuliert 418.745 km (1,4 % Abweichung)",
-               "Tage seit dem 2. April 2026, 02:10 UTC", "Abstand zur Erde (1000 km)")
+    style_axes(
+        axes,
+        "Artemis II: Abstand zur Erde\n"
+        "größte Entfernung real 413.146 km, simuliert 418.745 km (1,4 % Abweichung)",
+        "Tage seit dem 2. April 2026, 02:10 UTC",
+        "Abstand zur Erde (1000 km)",
+    )
 
-    axes.plot(days, np.linalg.norm(actual, axis=1) / 1e6, color=REAL,
-              linewidth=2.4, label="real (JPL Horizons)")
-    axes.plot(days, np.linalg.norm(simulated, axis=1) / 1e6, color=SIMULATED,
-              linewidth=2.0, label="simuliert")
-    axes.axhline(413.1462, color=ACCENT, linewidth=1.0, linestyle=":",
-                 label="NASA: 413.146,2 km")
+    axes.plot(
+        days,
+        np.linalg.norm(actual, axis=1) / 1e6,
+        color=REAL,
+        linewidth=2.4,
+        label="real (JPL Horizons)",
+    )
+    axes.plot(
+        days,
+        np.linalg.norm(simulated, axis=1) / 1e6,
+        color=SIMULATED,
+        linewidth=2.0,
+        label="simuliert",
+    )
+    axes.axhline(
+        413.1462, color=ACCENT, linewidth=1.0, linestyle=":", label="NASA: 413.146,2 km"
+    )
 
     scenario = load_named_scenario("artemis2")
     for maneuver in scenario.body("Artemis II").list_maneuvers:
@@ -141,9 +197,14 @@ def figure_artemis_distance(outdir):
             continue
         moment = maneuver.earliest_time / 86400.0
         axes.axvline(moment, color=WARN, linewidth=1.0, linestyle="--")
-        axes.annotate(f"TLI, {maneuver.delta_v:.0f} m/s", (moment, 300),
-                      textcoords="offset points", xytext=(8, 0),
-                      color=WARN, fontsize=9)
+        axes.annotate(
+            f"TLI, {maneuver.delta_v:.0f} m/s",
+            (moment, 300),
+            textcoords="offset points",
+            xytext=(8, 0),
+            color=WARN,
+            fontsize=9,
+        )
 
     legend = axes.legend(facecolor=BACKGROUND, edgecolor=GRID, fontsize=9)
     for text in legend.get_texts():
@@ -158,11 +219,13 @@ def figure_burn_detection(outdir):
     maneuvers = detection["maneuvers"]
 
     figure, axes = new_figure()
-    style_axes(axes,
-               "Manöver aus der geflogenen Bahn gewinnen\n"
-               "zwischen den Burns ist die Bewegung ballistisch -- was übrig bleibt, ist Schub",
-               "Manöver (Reihenfolge im Missionsverlauf)",
-               "unerklärte Geschwindigkeitsänderung (m/s)")
+    style_axes(
+        axes,
+        "Manöver aus der geflogenen Bahn gewinnen\n"
+        "zwischen den Burns ist die Bewegung ballistisch -- was übrig bleibt, ist Schub",
+        "Manöver (Reihenfolge im Missionsverlauf)",
+        "unerklärte Geschwindigkeitsänderung (m/s)",
+    )
 
     labels = [entry["start"][5:17] for entry in maneuvers]
     values = [entry["delta_v"] for entry in maneuvers]
@@ -175,21 +238,39 @@ def figure_burn_detection(outdir):
     axes.set_xticklabels(labels, rotation=30, ha="right", fontsize=8)
 
     median = detection["quiet_residual_median"]
-    axes.axhline(median, color=REAL, linewidth=1.0, linestyle=":",
-                 label=f"Grundrauschen ohne Manöver: {median:.4f} m/s")
+    axes.axhline(
+        median,
+        color=REAL,
+        linewidth=1.0,
+        linestyle=":",
+        label=f"Grundrauschen ohne Manöver: {median:.4f} m/s",
+    )
 
     for index, entry in enumerate(maneuvers):
         if entry["delta_v"] > 100:
-            axes.annotate("TLI\nNASA: 388 m/s\nerkannt: 388,3 m/s",
-                          (index, entry["delta_v"]), textcoords="offset points",
-                          xytext=(0, 12), ha="center", color=ACCENT, fontsize=9)
+            axes.annotate(
+                "TLI\nNASA: 388 m/s\nerkannt: 388,3 m/s",
+                (index, entry["delta_v"]),
+                textcoords="offset points",
+                xytext=(0, 12),
+                ha="center",
+                color=ACCENT,
+                fontsize=9,
+            )
         elif abs(entry["delta_v"] - 3.0) < 0.3:
-            axes.annotate("OTC-3\nNASA: 3 m/s\nerkannt: 3,0 m/s",
-                          (index, entry["delta_v"]), textcoords="offset points",
-                          xytext=(0, 12), ha="center", color=FOREGROUND, fontsize=8)
+            axes.annotate(
+                "OTC-3\nNASA: 3 m/s\nerkannt: 3,0 m/s",
+                (index, entry["delta_v"]),
+                textcoords="offset points",
+                xytext=(0, 12),
+                ha="center",
+                color=FOREGROUND,
+                fontsize=8,
+            )
 
-    legend = axes.legend(facecolor=BACKGROUND, edgecolor=GRID, fontsize=9,
-                         loc="upper left")
+    legend = axes.legend(
+        facecolor=BACKGROUND, edgecolor=GRID, fontsize=9, loc="upper left"
+    )
     for text in legend.get_texts():
         text.set_color(FOREGROUND)
 
@@ -246,31 +327,52 @@ def figure_trigger_effect(outdir):
                 integrator.calculate_states_batch(scenario.bodies, 60.0, elapsed)
                 elapsed += 60.0
             elements = elements_from_state(
-                probe.getLatestState().vec_location - earth.getLatestState().vec_location,
-                probe.getLatestState().vec_velocity - earth.getLatestState().vec_velocity,
+                probe.getLatestState().vec_location
+                - earth.getLatestState().vec_location,
+                probe.getLatestState().vec_velocity
+                - earth.getLatestState().vec_velocity,
                 GM_EARTH,
             )
             track.append(min(elements.apoapsis, 5.0e8))
         return np.array(track)
 
-    actual = np.array([
-        min(elements_from_state(r["location"], r["velocity"], GM_EARTH).apoapsis, 5.0e8)
-        for r in records
-    ])
+    actual = np.array(
+        [
+            min(
+                elements_from_state(r["location"], r["velocity"], GM_EARTH).apoapsis,
+                5.0e8,
+            )
+            for r in records
+        ]
+    )
 
     figure, axes = new_figure()
-    style_axes(axes,
-               "Ein gemessenes Delta-v abzuspielen genügt nicht\n"
-               "Chandrayaan-2: Anhebung des Apogäums bis zum Mondtransfer",
-               "Tage seit dem Start", "Apogäum (1000 km)")
+    style_axes(
+        axes,
+        "Ein gemessenes Delta-v abzuspielen genügt nicht\n"
+        "Chandrayaan-2: Anhebung des Apogäums bis zum Mondtransfer",
+        "Tage seit dem Start",
+        "Apogäum (1000 km)",
+    )
 
-    axes.plot(days, actual / 1e6, color=REAL, linewidth=2.6,
-              label="real (JPL Horizons)")
-    axes.plot(days, apoapsis_track(replay=False) / 1e6, color=ACCENT,
-              linewidth=2.0, label="Zielsteuerung: jeder Burn fliegt sein Ziel an")
-    axes.plot(days, apoapsis_track(replay=True) / 1e6, color=WARN,
-              linewidth=2.0, linestyle="--",
-              label="abgespielt: gemessenes Delta-v zur geplanten Zeit")
+    axes.plot(
+        days, actual / 1e6, color=REAL, linewidth=2.6, label="real (JPL Horizons)"
+    )
+    axes.plot(
+        days,
+        apoapsis_track(replay=False) / 1e6,
+        color=ACCENT,
+        linewidth=2.0,
+        label="Zielsteuerung: jeder Burn fliegt sein Ziel an",
+    )
+    axes.plot(
+        days,
+        apoapsis_track(replay=True) / 1e6,
+        color=WARN,
+        linewidth=2.0,
+        linestyle="--",
+        label="abgespielt: gemessenes Delta-v zur geplanten Zeit",
+    )
 
     axes.set_ylim(0, 460)
     legend = axes.legend(facecolor=BACKGROUND, edgecolor=GRID, fontsize=9)
@@ -285,12 +387,16 @@ def figure_convergence(outdir):
     import sys
 
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-    from tests.test_kernel_verification import kepler_pair, kepler_position, relative_position
+    from tests.test_kernel_verification import (
+        kepler_pair,
+        kepler_position,
+        relative_position,
+    )
     from tests.test_physics import advance
 
     semi_major_axis, eccentricity = 1.5e11, 0.3
     _, mu = kepler_pair(semi_major_axis, eccentricity)
-    period = 2.0 * math.pi * math.sqrt(semi_major_axis ** 3 / mu)
+    period = 2.0 * math.pi * math.sqrt(semi_major_axis**3 / mu)
     elapsed = period / 4.0
 
     steps = [250, 500, 1000, 2000, 4000]
@@ -303,21 +409,43 @@ def figure_convergence(outdir):
         sizes.append(elapsed / count)
 
     figure, axes = new_figure(8.0, 6.0)
-    style_axes(axes,
-               "Der Integrator ist vierter Ordnung\n"
-               "Fehler gegen die exakte Lösung der Kepler-Gleichung",
-               "Schrittweite (s)", "Ortsfehler nach einem Viertelumlauf (m)")
+    style_axes(
+        axes,
+        "Der Integrator ist vierter Ordnung\n"
+        "Fehler gegen die exakte Lösung der Kepler-Gleichung",
+        "Schrittweite (s)",
+        "Ortsfehler nach einem Viertelumlauf (m)",
+    )
 
-    axes.loglog(sizes, errors, "o-", color=SIMULATED, linewidth=2.0,
-                markersize=7, label="gemessen")
+    axes.loglog(
+        sizes,
+        errors,
+        "o-",
+        color=SIMULATED,
+        linewidth=2.0,
+        markersize=7,
+        label="gemessen",
+    )
 
     reference = np.array(errors[0]) * (np.array(sizes) / sizes[0]) ** 4
-    axes.loglog(sizes, reference, "--", color=ACCENT, linewidth=1.4,
-                label="ideale vierte Ordnung")
+    axes.loglog(
+        sizes,
+        reference,
+        "--",
+        color=ACCENT,
+        linewidth=1.4,
+        label="ideale vierte Ordnung",
+    )
 
     for size, error in zip(sizes, errors):
-        axes.annotate(f"{error:.1e}", (size, error), textcoords="offset points",
-                      xytext=(8, -12), color=FOREGROUND, fontsize=8)
+        axes.annotate(
+            f"{error:.1e}",
+            (size, error),
+            textcoords="offset points",
+            xytext=(8, -12),
+            color=FOREGROUND,
+            fontsize=8,
+        )
 
     legend = axes.legend(facecolor=BACKGROUND, edgecolor=GRID, fontsize=9)
     for text in legend.get_texts():

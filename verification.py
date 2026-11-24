@@ -62,8 +62,10 @@ class Collision:
         self.distance = distance
 
     def __repr__(self):
-        return (f"<Collision {self.name_a}/{self.name_b} bei t={self.time:.0f}s, "
-                f"Abstand {self.distance:.0f} m>")
+        return (
+            f"<Collision {self.name_a}/{self.name_b} bei t={self.time:.0f}s, "
+            f"Abstand {self.distance:.0f} m>"
+        )
 
 
 def find_collision(bodies, time):
@@ -81,10 +83,12 @@ def find_collision(bodies, time):
 
 def _distance_between(scenario_bodies, name_a, name_b):
     by_name = {body.name: body for body in scenario_bodies}
-    return float(np.linalg.norm(
-        by_name[name_a].getLatestState().vec_location
-        - by_name[name_b].getLatestState().vec_location
-    ))
+    return float(
+        np.linalg.norm(
+            by_name[name_a].getLatestState().vec_location
+            - by_name[name_b].getLatestState().vec_location
+        )
+    )
 
 
 def verify_scenario(scenario, time_step=None, integrator=None):
@@ -112,11 +116,15 @@ def verify_scenario(scenario, time_step=None, integrator=None):
             simulation_time += time_step
             collision = find_collision(scenario.bodies, simulation_time)
 
-        results.append(MilestoneResult(
-            milestone,
-            _distance_between(scenario.bodies, milestone.body, milestone.relative_to),
-            reached=collision is None,
-        ))
+        results.append(
+            MilestoneResult(
+                milestone,
+                _distance_between(
+                    scenario.bodies, milestone.body, milestone.relative_to
+                ),
+                reached=collision is None,
+            )
+        )
 
     return results, collision
 
@@ -136,7 +144,7 @@ def format_report(scenario, results, collision=None):
             "ABBRUCH: Körperdurchdringung",
             "-" * 70,
             f"  {collision.name_a} und {collision.name_b} bei t={collision.time:,.0f}s"
-            f" ({collision.time/86400:.2f} Tage), Abstand {collision.distance/1e3:,.1f} km.",
+            f" ({collision.time / 86400:.2f} Tage), Abstand {collision.distance / 1e3:,.1f} km.",
             "  Die Simulation kennt keine Kollisionsantwort. Alle Werte nach",
             "  diesem Zeitpunkt sind unphysikalisch und werden nicht bewertet.",
         ]
@@ -155,18 +163,20 @@ def format_report(scenario, results, collision=None):
             f"[{mark:6}] {milestone.name}  ({milestone.date or 't=%.0fs' % milestone.time})"
         )
         lines.append(
-            f"           erwartet {milestone.expected_distance/1e3:14,.1f} km"
-            f"  +/- {milestone.tolerance/1e3:,.1f} km"
+            f"           erwartet {milestone.expected_distance / 1e3:14,.1f} km"
+            f"  +/- {milestone.tolerance / 1e3:,.1f} km"
         )
         if result.reached:
             lines.append(
-                f"           gemessen {result.actual_distance/1e3:14,.1f} km"
-                f"  Abweichung {result.error/1e3:,.1f} km"
+                f"           gemessen {result.actual_distance / 1e3:14,.1f} km"
+                f"  Abweichung {result.error / 1e3:,.1f} km"
             )
         else:
             lines.append("           nicht ausgewertet -- Lauf vorher abgebrochen")
         if milestone.status == "aspirational":
-            lines.append("           Status: historisches Ziel, vom Modell nicht erreichbar")
+            lines.append(
+                "           Status: historisches Ziel, vom Modell nicht erreichbar"
+            )
         if milestone.note:
             lines.append(f"           {milestone.note}")
         lines.append("")
@@ -181,7 +191,9 @@ def format_report(scenario, results, collision=None):
     if collision is not None:
         lines.append("ERGEBNIS: Lauf wegen Körperdurchdringung abgebrochen")
     elif failures:
-        lines.append(f"ERGEBNIS: {len(failures)} von {len(results)} Meilensteinen verfehlt")
+        lines.append(
+            f"ERGEBNIS: {len(failures)} von {len(results)} Meilensteinen verfehlt"
+        )
     else:
         verified = sum(1 for r in results if r.milestone.status == "verified")
         lines.append(
@@ -213,8 +225,15 @@ class TrackingSample:
         return abs(self.simulated.periapsis - self.actual.periapsis)
 
 
-def track_against_truth(scenario, truth_records, body_name, center_name,
-                        center_mu, time_step=None, integrator=None):
+def track_against_truth(
+    scenario,
+    truth_records,
+    body_name,
+    center_name,
+    center_mu,
+    time_step=None,
+    integrator=None,
+):
     """Vergleicht einen Lauf mit der real geflogenen Bahn.
 
     Die Referenz stammt aus JPL Horizons und ist relativ zu `center_name`
@@ -239,22 +258,34 @@ def track_against_truth(scenario, truth_records, body_name, center_name,
     for record in truth_records:
         target = (record["jd"] - epoch_jd) * 86400.0
         while simulation_time < target:
-            integrator.calculate_states_batch(scenario.bodies, time_step, simulation_time)
+            integrator.calculate_states_batch(
+                scenario.bodies, time_step, simulation_time
+            )
             simulation_time += time_step
 
-        relative_location = (body.getLatestState().vec_location
-                             - center.getLatestState().vec_location)
-        relative_velocity = (body.getLatestState().vec_velocity
-                             - center.getLatestState().vec_velocity)
+        relative_location = (
+            body.getLatestState().vec_location - center.getLatestState().vec_location
+        )
+        relative_velocity = (
+            body.getLatestState().vec_velocity - center.getLatestState().vec_velocity
+        )
 
         actual_location = np.array(record["location"])
-        samples.append(TrackingSample(
-            elapsed=target,
-            date=record["date"][:17],
-            position_error=float(np.linalg.norm(relative_location - actual_location)),
-            simulated=elements_from_state(relative_location, relative_velocity, center_mu),
-            actual=elements_from_state(actual_location, record["velocity"], center_mu),
-        ))
+        samples.append(
+            TrackingSample(
+                elapsed=target,
+                date=record["date"][:17],
+                position_error=float(
+                    np.linalg.norm(relative_location - actual_location)
+                ),
+                simulated=elements_from_state(
+                    relative_location, relative_velocity, center_mu
+                ),
+                actual=elements_from_state(
+                    actual_location, record["velocity"], center_mu
+                ),
+            )
+        )
 
     return samples
 
@@ -277,31 +308,33 @@ def format_tracking_report(samples, maneuver_times=()):
         if first_burn is not None and not marked_burn and sample.elapsed >= first_burn:
             lines.append(
                 f"{'':>18}--- ab hier wirken Manoever "
-                f"(erstes bei t={first_burn/86400:.2f} d) ---"
+                f"(erstes bei t={first_burn / 86400:.2f} d) ---"
             )
             marked_burn = True
 
-        apoapsis = (f"{sample.simulated.apoapsis/1e3:>10.0f}/"
-                    f"{sample.actual.apoapsis/1e3:<10.0f}"
-                    if not math.isinf(sample.actual.apoapsis) else f"{'hyperbolisch':>21}")
+        apoapsis = (
+            f"{sample.simulated.apoapsis / 1e3:>10.0f}/"
+            f"{sample.actual.apoapsis / 1e3:<10.0f}"
+            if not math.isinf(sample.actual.apoapsis)
+            else f"{'hyperbolisch':>21}"
+        )
         lines.append(
-            f"{sample.date:<18}{sample.elapsed/86400:>10.2f} d"
-            f"{sample.position_error/1e3:>12.0f} km"
-            f"{sample.simulated.periapsis/1e3:>11.0f}/"
-            f"{sample.actual.periapsis/1e3:<10.0f}"
+            f"{sample.date:<18}{sample.elapsed / 86400:>10.2f} d"
+            f"{sample.position_error / 1e3:>12.0f} km"
+            f"{sample.simulated.periapsis / 1e3:>11.0f}/"
+            f"{sample.actual.periapsis / 1e3:<10.0f}"
             f"{apoapsis:>24}"
         )
 
-    ballistic = [s for s in samples
-                 if first_burn is None or s.elapsed < first_burn]
+    ballistic = [s for s in samples if first_burn is None or s.elapsed < first_burn]
     if ballistic:
         worst = max(s.position_error for s in ballistic)
         lines += [
             "",
             f"Rein ballistische Phase ({len(ballistic)} Vergleichspunkte bis zum "
             f"ersten Manoever):",
-            f"  groesster Ortsfehler {worst/1e3:.1f} km nach "
-            f"{ballistic[-1].elapsed/86400:.2f} Tagen",
+            f"  groesster Ortsfehler {worst / 1e3:.1f} km nach "
+            f"{ballistic[-1].elapsed / 86400:.2f} Tagen",
         ]
 
     return "\n".join(lines)

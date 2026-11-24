@@ -1,6 +1,7 @@
 import math
 import numpy as np
 
+
 def calc_days_from_time(time):
     """Konvertiert Zeit in Sekunden zu Tagen"""
     time_in_days = time / 86400
@@ -37,8 +38,10 @@ def get_polar_coordinates(massiveObject1, massiveObject2):
     Elevation ist die Grösse, die eine zweidimensionale Rechnung gar nicht
     darstellen könnte.
     """
-    vec_distance = (massiveObject2.getLatestState().vec_location
-                    - massiveObject1.getLatestState().vec_location)
+    vec_distance = (
+        massiveObject2.getLatestState().vec_location
+        - massiveObject1.getLatestState().vec_location
+    )
     magnitude = float(np.linalg.norm(vec_distance))
     if magnitude == 0.0:
         return 0.0, 0.0, 0.0

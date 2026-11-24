@@ -20,5 +20,9 @@ def get_scenario(scenario_name=DEFAULT_SCENARIO):
     return load_named_scenario(scenario_name)
 
 
-__all__ = ["get_massive_objects", "get_scenario", "available_scenarios",
-           "DEFAULT_SCENARIO"]
+__all__ = [
+    "get_massive_objects",
+    "get_scenario",
+    "available_scenarios",
+    "DEFAULT_SCENARIO",
+]

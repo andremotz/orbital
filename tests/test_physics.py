@@ -81,15 +81,19 @@ def total_angular_momentum(objects):
 def total_energy(objects):
     """Gesamtenergie: kinetisch plus potenziell über alle Paare."""
     kinetic = sum(
-        0.5 * obj.mass * float(np.dot(obj.getLatestState().vec_velocity,
-                                      obj.getLatestState().vec_velocity))
+        0.5
+        * obj.mass
+        * float(
+            np.dot(obj.getLatestState().vec_velocity, obj.getLatestState().vec_velocity)
+        )
         for obj in objects
     )
     potential = 0.0
     for i, obj_a in enumerate(objects):
-        for obj_b in objects[i + 1:]:
+        for obj_b in objects[i + 1 :]:
             distance = np.linalg.norm(
-                obj_a.getLatestState().vec_location - obj_b.getLatestState().vec_location
+                obj_a.getLatestState().vec_location
+                - obj_b.getLatestState().vec_location
             )
             potential -= CONST_GRAVITY * obj_a.mass * obj_b.mass / distance
     return kinetic + potential
@@ -110,13 +114,13 @@ class TestAcceleration(unittest.TestCase):
         objects, _ = circular_orbit_pair()
         satellite = objects[1]
 
-        acceleration = get_acceleration(
-            satellite, satellite.getLatestState(), objects
-        )
+        acceleration = get_acceleration(satellite, satellite.getLatestState(), objects)
 
-        expected = CONST_GRAVITY * MASS_SUN / AU ** 2  # ~5.9e-3 m/s^2
+        expected = CONST_GRAVITY * MASS_SUN / AU**2  # ~5.9e-3 m/s^2
         self.assertAlmostEqual(
-            float(np.linalg.norm(acceleration)) / expected, 1.0, places=3,
+            float(np.linalg.norm(acceleration)) / expected,
+            1.0,
+            places=3,
             msg="Beschleunigung weicht um mehr als 0.1%% vom analytischen Wert ab",
         )
 
@@ -151,7 +155,7 @@ class TestGravitationalParameter(unittest.TestCase):
         acceleration = get_acceleration(probe, probe.getLatestState(), [body, probe])
 
         self.assertAlmostEqual(
-            float(np.linalg.norm(acceleration)) / (GM_EARTH / 7.0e6 ** 2), 1.0, places=9
+            float(np.linalg.norm(acceleration)) / (GM_EARTH / 7.0e6**2), 1.0, places=9
         )
 
     def test_published_gm_differs_from_mass_times_g(self):
@@ -159,8 +163,9 @@ class TestGravitationalParameter(unittest.TestCase):
         mass_based = CONST_GRAVITY * 1.989e30
         relative = abs(mass_based - GM_SUN) / GM_SUN
 
-        self.assertGreater(relative, 1e-4,
-                           "Wenn beide übereinstimmen, ist die Begründung hinfällig")
+        self.assertGreater(
+            relative, 1e-4, "Wenn beide übereinstimmen, ist die Begründung hinfällig"
+        )
 
 
 class TestOblateness(unittest.TestCase):
@@ -168,8 +173,17 @@ class TestOblateness(unittest.TestCase):
 
     def earth_and_probe(self, offset):
         state = State(np.zeros(DIMENSIONS), np.zeros(DIMENSIONS))
-        earth = MassiveObject(state, 5.9722e24, 6.371e6, (0, 0, 0), "Earth", True, [],
-                              mu=GM_EARTH, oblateness=Oblateness.earth())
+        earth = MassiveObject(
+            state,
+            5.9722e24,
+            6.371e6,
+            (0, 0, 0),
+            "Earth",
+            True,
+            [],
+            mu=GM_EARTH,
+            oblateness=Oblateness.earth(),
+        )
         probe = make_object("Probe", 1000.0, offset, [0.0, 0.0, 0.0], is_heavy=False)
         return [earth, probe]
 
@@ -186,8 +200,13 @@ class TestOblateness(unittest.TestCase):
 
         extra = oblateness_accelerations(positions, bodies)
 
-        expected = 1.5 * Oblateness.earth().j2 * GM_EARTH * \
-            Oblateness.earth().equatorial_radius ** 2 / radius ** 4
+        expected = (
+            1.5
+            * Oblateness.earth().j2
+            * GM_EARTH
+            * Oblateness.earth().equatorial_radius ** 2
+            / radius**4
+        )
         self.assertAlmostEqual(
             float(np.linalg.norm(extra[1])) / expected, 1.0, places=6
         )
@@ -201,9 +220,9 @@ class TestOblateness(unittest.TestCase):
         for radius in (7.0e6, 1.4e7):
             bodies = self.earth_and_probe(equatorial * radius)
             positions = np.array([b.getLatestState().vec_location for b in bodies])
-            magnitudes.append(float(np.linalg.norm(
-                oblateness_accelerations(positions, bodies)[1]
-            )))
+            magnitudes.append(
+                float(np.linalg.norm(oblateness_accelerations(positions, bodies)[1]))
+            )
 
         # Radius verdoppelt -> Beitrag auf ein Sechzehntel
         self.assertAlmostEqual(magnitudes[0] / magnitudes[1], 16.0, places=4)
@@ -281,7 +300,9 @@ class TestOrbitGeometry(unittest.TestCase):
 
         radius = float(np.linalg.norm(satellite.getLatestState().vec_location))
         self.assertAlmostEqual(
-            radius / AU, 1.0, places=3,
+            radius / AU,
+            1.0,
+            places=3,
             msg="Bahnradius weicht um mehr als 0.1%% ab",
         )
 
@@ -299,7 +320,8 @@ class TestOrbitGeometry(unittest.TestCase):
 
         offset = float(np.linalg.norm(satellite.getLatestState().vec_location - start))
         self.assertLess(
-            offset / AU, 1e-6,
+            offset / AU,
+            1e-6,
             "Bahn schließt sich nicht -- Abweichung > 1e-6 des Radius",
         )
 
@@ -320,7 +342,8 @@ class TestThreeDimensionalMotion(unittest.TestCase):
         sun = make_object("Sun", MASS_SUN, [0.0, 0.0, 0.0], [0.0, 0.0, 0.0])
         # Ortsvektor entlang x, Geschwindigkeit in der gekippten Ebene
         satellite = make_object(
-            "Satellite", 1000.0,
+            "Satellite",
+            1000.0,
             [radius, 0.0, 0.0],
             [0.0, speed * math.cos(angle), speed * math.sin(angle)],
         )
@@ -333,8 +356,11 @@ class TestThreeDimensionalMotion(unittest.TestCase):
         advance(objects, 3600.0, 2000)
 
         out_of_plane = abs(float(satellite.getLatestState().vec_location[2]))
-        self.assertGreater(out_of_plane, 0.1 * AU,
-                           "Bahn bleibt in der Ekliptik -- z wird nicht integriert")
+        self.assertGreater(
+            out_of_plane,
+            0.1 * AU,
+            "Bahn bleibt in der Ekliptik -- z wird nicht integriert",
+        )
 
     def test_inclination_is_preserved(self):
         """Ohne Störung darf sich die Bahnebene nicht drehen."""
@@ -345,7 +371,9 @@ class TestThreeDimensionalMotion(unittest.TestCase):
         after = total_angular_momentum(objects)
 
         # Winkel zwischen den Drehimpulsvektoren -- er misst die Drehung der Ebene
-        cosine = float(np.dot(before, after) / (np.linalg.norm(before) * np.linalg.norm(after)))
+        cosine = float(
+            np.dot(before, after) / (np.linalg.norm(before) * np.linalg.norm(after))
+        )
         self.assertAlmostEqual(cosine, 1.0, places=12, msg="Bahnebene kippt")
 
         # Und die Neigung entspricht der vorgegebenen
@@ -383,7 +411,9 @@ class TestManeuvers(unittest.TestCase):
         return probe
 
     def test_maneuver_fires_inside_its_window(self):
-        probe = self.make_probe(Maneuver(time_start=600, time_duration=1000, force=500.0))
+        probe = self.make_probe(
+            Maneuver(time_start=600, time_duration=1000, force=500.0)
+        )
 
         acceleration = get_mission_acceleration(probe, time=900.0)
 
@@ -391,12 +421,15 @@ class TestManeuvers(unittest.TestCase):
         np.testing.assert_allclose(acceleration, [0.0, 5.0, 0.0], atol=1e-12)
 
     def test_maneuver_is_silent_outside_its_window(self):
-        probe = self.make_probe(Maneuver(time_start=600, time_duration=1000, force=500.0))
+        probe = self.make_probe(
+            Maneuver(time_start=600, time_duration=1000, force=500.0)
+        )
 
         for time in (0.0, 599.0, 1600.0, 5000.0):
             with self.subTest(time=time):
                 np.testing.assert_allclose(
-                    get_mission_acceleration(probe, time), np.zeros(DIMENSIONS),
+                    get_mission_acceleration(probe, time),
+                    np.zeros(DIMENSIONS),
                     atol=1e-12,
                 )
 

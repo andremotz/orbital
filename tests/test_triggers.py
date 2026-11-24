@@ -27,12 +27,19 @@ def elliptical_orbit(periapsis=6.6e6, apoapsis=5.2e7):
     speed = math.sqrt(GM_EARTH * (2.0 / periapsis - 1.0 / semi_major_axis))
 
     earth = MassiveObject(
-        State(np.zeros(3), np.zeros(3)), 5.9722e24, 6.371e6, (0, 0, 0),
-        "Earth", True, [], mu=GM_EARTH,
+        State(np.zeros(3), np.zeros(3)),
+        5.9722e24,
+        6.371e6,
+        (0, 0, 0),
+        "Earth",
+        True,
+        [],
+        mu=GM_EARTH,
     )
-    probe = make_object("Probe", 1000.0, [periapsis, 0.0, 0.0], [0.0, speed, 0.0],
-                        is_heavy=False)
-    return [earth, probe], 2.0 * math.pi * math.sqrt(semi_major_axis ** 3 / GM_EARTH)
+    probe = make_object(
+        "Probe", 1000.0, [periapsis, 0.0, 0.0], [0.0, speed, 0.0], is_heavy=False
+    )
+    return [earth, probe], 2.0 * math.pi * math.sqrt(semi_major_axis**3 / GM_EARTH)
 
 
 class TestTimeToPeriapsis(unittest.TestCase):
@@ -82,8 +89,9 @@ class TestTriggers(unittest.TestCase):
     """Auslöser einzeln betrachtet."""
 
     def test_time_trigger_fires_at_its_time(self):
-        maneuver = Maneuver(time_duration=100.0, delta_v=10.0,
-                            trigger=TimeTrigger(500.0))
+        maneuver = Maneuver(
+            time_duration=100.0, delta_v=10.0, trigger=TimeTrigger(500.0)
+        )
         bodies, _ = elliptical_orbit()
         bodies[1].list_maneuvers.append(maneuver)
 
@@ -97,8 +105,11 @@ class TestTriggers(unittest.TestCase):
         """Auf einer Ellipse darf erst kurz vor dem Periapsis gezündet werden."""
         bodies, period = elliptical_orbit()
         duration = 600.0
-        maneuver = Maneuver(time_duration=duration, delta_v=50.0,
-                            trigger=PeriapsisTrigger("Earth", after=60.0))
+        maneuver = Maneuver(
+            time_duration=duration,
+            delta_v=50.0,
+            trigger=PeriapsisTrigger("Earth", after=60.0),
+        )
         bodies[1].list_maneuvers.append(maneuver)
 
         elapsed = 0.0
@@ -119,8 +130,11 @@ class TestTriggers(unittest.TestCase):
     def test_periapsis_trigger_respects_after(self):
         """Vor `after` darf nichts passieren, auch nicht an einem Periapsis."""
         bodies, period = elliptical_orbit()
-        maneuver = Maneuver(time_duration=600.0, delta_v=50.0,
-                            trigger=PeriapsisTrigger("Earth", after=period * 1.5))
+        maneuver = Maneuver(
+            time_duration=600.0,
+            delta_v=50.0,
+            trigger=PeriapsisTrigger("Earth", after=period * 1.5),
+        )
         bodies[1].list_maneuvers.append(maneuver)
 
         elapsed = 0.0
@@ -133,8 +147,11 @@ class TestTriggers(unittest.TestCase):
 
     def test_trigger_fires_only_once(self):
         bodies, period = elliptical_orbit()
-        maneuver = Maneuver(time_duration=600.0, delta_v=50.0,
-                            trigger=PeriapsisTrigger("Earth", after=0.0))
+        maneuver = Maneuver(
+            time_duration=600.0,
+            delta_v=50.0,
+            trigger=PeriapsisTrigger("Earth", after=0.0),
+        )
         bodies[1].list_maneuvers.append(maneuver)
 
         elapsed = 0.0
@@ -150,8 +167,7 @@ class TestTriggers(unittest.TestCase):
         self.assertEqual(maneuver.activated_at, first)
 
     def test_reset_allows_a_second_run(self):
-        maneuver = Maneuver(time_duration=100.0, delta_v=10.0,
-                            trigger=TimeTrigger(0.0))
+        maneuver = Maneuver(time_duration=100.0, delta_v=10.0, trigger=TimeTrigger(0.0))
         bodies, _ = elliptical_orbit()
         bodies[1].list_maneuvers.append(maneuver)
 
@@ -186,12 +202,16 @@ class TestOberthEffect(unittest.TestCase):
         probe = bodies[1]
 
         if use_trigger:
-            maneuver = Maneuver(time_duration=600.0, delta_v=150.0,
-                                trigger=PeriapsisTrigger("Earth", after=period * 0.5),
-                                relative_to="Earth")
+            maneuver = Maneuver(
+                time_duration=600.0,
+                delta_v=150.0,
+                trigger=PeriapsisTrigger("Earth", after=period * 0.5),
+                relative_to="Earth",
+            )
         else:
-            maneuver = Maneuver(time_start=when, time_duration=600.0,
-                                delta_v=150.0, relative_to="Earth")
+            maneuver = Maneuver(
+                time_start=when, time_duration=600.0, delta_v=150.0, relative_to="Earth"
+            )
         probe.list_maneuvers.append(maneuver)
 
         elapsed = 0.0
@@ -214,7 +234,8 @@ class TestOberthEffect(unittest.TestCase):
         # 30.226 km grosse Halbachse für dasselbe Delta-v von 150 m/s.
         ratio = at_periapsis.semi_major_axis / at_apoapsis.semi_major_axis
         self.assertGreater(
-            ratio, 1.15,
+            ratio,
+            1.15,
             f"Zündung am Periapsis bringt nur Faktor {ratio:.2f} mehr Energie "
             f"als am Apoapsis -- dann wäre die Zündlogik kaum wirksam",
         )
@@ -224,13 +245,18 @@ class TestOberthEffect(unittest.TestCase):
         bodies, period = elliptical_orbit()
         before = elements_from_state(
             bodies[1].getLatestState().vec_location,
-            bodies[1].getLatestState().vec_velocity, GM_EARTH,
+            bodies[1].getLatestState().vec_velocity,
+            GM_EARTH,
         )
 
-        bodies[1].list_maneuvers.append(Maneuver(
-            time_duration=600.0, delta_v=150.0, relative_to="Earth",
-            trigger=PeriapsisTrigger("Earth", after=period * 0.5),
-        ))
+        bodies[1].list_maneuvers.append(
+            Maneuver(
+                time_duration=600.0,
+                delta_v=150.0,
+                relative_to="Earth",
+                trigger=PeriapsisTrigger("Earth", after=period * 0.5),
+            )
+        )
         elapsed = 0.0
         while elapsed < period * 2.0:
             step(bodies, 30.0, elapsed)
@@ -238,7 +264,8 @@ class TestOberthEffect(unittest.TestCase):
 
         after = elements_from_state(
             bodies[1].getLatestState().vec_location,
-            bodies[1].getLatestState().vec_velocity, GM_EARTH,
+            bodies[1].getLatestState().vec_velocity,
+            GM_EARTH,
         )
 
         self.assertGreater(after.apoapsis, before.apoapsis * 1.1)
@@ -270,14 +297,20 @@ class TestScenarioTriggers(unittest.TestCase):
         from data.scenario import ScenarioError, load_scenario
         from tests.test_scenario import MINIMAL_BODY, write_scenario
 
-        path = write_scenario({
-            "name": "X",
-            "bodies": [dict(MINIMAL_BODY)],
-            "maneuvers": [{
-                "body": "Star", "duration": 10, "delta_v": 1,
-                "trigger": {"type": "periapsis", "reference": "Ghost"},
-            }],
-        })
+        path = write_scenario(
+            {
+                "name": "X",
+                "bodies": [dict(MINIMAL_BODY)],
+                "maneuvers": [
+                    {
+                        "body": "Star",
+                        "duration": 10,
+                        "delta_v": 1,
+                        "trigger": {"type": "periapsis", "reference": "Ghost"},
+                    }
+                ],
+            }
+        )
         try:
             with self.assertRaises(ScenarioError) as context:
                 load_scenario(path)
@@ -289,14 +322,21 @@ class TestScenarioTriggers(unittest.TestCase):
         from data.scenario import ScenarioError, load_scenario
         from tests.test_scenario import MINIMAL_BODY, write_scenario
 
-        path = write_scenario({
-            "name": "X",
-            "bodies": [dict(MINIMAL_BODY)],
-            "maneuvers": [{
-                "body": "Star", "duration": 10, "delta_v": 1, "time_start": 0,
-                "trigger": {"type": "periapsis", "reference": "Star"},
-            }],
-        })
+        path = write_scenario(
+            {
+                "name": "X",
+                "bodies": [dict(MINIMAL_BODY)],
+                "maneuvers": [
+                    {
+                        "body": "Star",
+                        "duration": 10,
+                        "delta_v": 1,
+                        "time_start": 0,
+                        "trigger": {"type": "periapsis", "reference": "Star"},
+                    }
+                ],
+            }
+        )
         try:
             with self.assertRaises(ScenarioError):
                 load_scenario(path)
