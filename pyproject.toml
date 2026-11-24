@@ -21,8 +21,10 @@ viz = ["matplotlib>=3.5"]
 pygame = ["pygame>=2.0"]
 # the target search in targeting.py
 targeting = ["scipy>=1.11"]
-# everything needed to run every script and the test suite
-dev = ["orbital[viz,pygame,targeting]"]
+# linting and formatting; pinned, so a ruff release cannot turn CI red
+lint = ["ruff==0.17.6"]
+# everything needed to run every script, the test suite and the linters
+dev = ["orbital[viz,pygame,targeting,lint]"]
 
 [project.urls]
 Repository = "https://github.com/andremotz/orbital"
@@ -35,3 +37,25 @@ Repository = "https://github.com/andremotz/orbital"
 [tool.setuptools]
 packages = []
 py-modules = []
+
+[tool.ruff]
+target-version = "py310"
+# The Rust kernel's build output and the virtual environments are not ours
+extend-exclude = ["rust_kernel/target"]
+
+[tool.ruff.lint]
+# Listed explicitly: without a list, recent ruff versions enable a much
+# broader default set than the classic pyflakes/pycodestyle one.
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # import sorting
+    "UP",  # pyupgrade, down to target-version
+    "B",   # bugbear
+]
+ignore = [
+    # zip(strict=True) would change behaviour -- a length mismatch would
+    # raise instead of truncating. Worth deciding per call, not in a lint pass.
+    "B905",
+]
